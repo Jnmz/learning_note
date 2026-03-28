@@ -43,13 +43,14 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ secrets.GH_APP_ID }}
+          app-id: ${{ secrets.GH_APP_ID || vars.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
       - name: Checkout repository with GitHub App token
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
+          ref: codex-staging
           fetch-depth: 0
 
       - name: Configure bot commit identity
@@ -82,7 +83,7 @@ jobs:
           git add -A
           git diff --cached --quiet && exit 0
           git commit -m "$COMMIT_MESSAGE"
-          git push
+          git push origin HEAD:codex-staging
 
       - name: No changes to apply
         if: steps.changes.outputs.has_changes != 'true'

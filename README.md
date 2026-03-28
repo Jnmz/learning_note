@@ -14,7 +14,9 @@ This repository is scaffolded as a documentation website using MkDocs + Material
 
 ```text
 .
+├── AGENTS.md
 ├── .github/workflows/codex-apply.yml
+├── .github/workflows/codex-promote.yml
 ├── .github/workflows/docs-update.yml
 ├── .github/workflows/deploy.yml
 ├── docs/
@@ -61,7 +63,7 @@ To publish:
 
 ## Automation
 
-This repository also supports automated write-back through GitHub App bot credentials. Prefer `.github/workflows/codex-apply.yml` for Codex-driven repository updates so commits are recorded as the configured bot identity instead of your personal GitHub account. `.github/workflows/docs-update.yml` is the lightweight companion check for docs, MkDocs config, and README changes, and does not replace the existing Pages deploy workflow.
+Daily AI or Codex changes should go to `codex-staging` first. Prefer `.github/workflows/codex-apply.yml` for automated write-back to `codex-staging`, and let `.github/workflows/codex-promote.yml` synchronize those changes to `main` with the configured bot identity. `.github/workflows/docs-update.yml` is the lightweight companion check for docs, MkDocs config, and README changes, and does not replace the existing Pages deploy workflow.
 
 ## Notes Workflow
 

@@ -1,0 +1,61 @@
+name: Codex Promote
+
+on:
+  push:
+    branches:
+      - codex-staging
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GH_APP_ID || vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Checkout repository with GitHub App token
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Fetch main and codex-staging
+        run: git fetch origin main codex-staging
+
+      - name: Prepare main branch
+        run: git checkout -B main origin/main
+
+      - name: Configure bot commit identity
+        run: |
+          git config user.name "${{ steps.app-token.outputs.app-slug }}[bot]"
+          git config user.email "${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
+
+      - name: Squash promote codex-staging into main
+        run: |
+          git merge --squash --no-commit origin/codex-staging
+
+      - name: Commit promoted changes
+        id: commit
+        run: |
+          if git diff --cached --quiet; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "chore: promote codex-staging to main"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - name: Push promoted commit to main
+        if: steps.commit.outputs.created == 'true'
+        run: git push origin HEAD:main
+
+      - name: No promotion needed
+        if: steps.commit.outputs.created != 'true'
+        run: echo "main is already up to date with codex-staging."
