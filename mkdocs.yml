@@ -31,6 +31,8 @@ markdown_extensions:
   - footnotes
   - md_in_html
   - tables
+  - pymdownx.arithmatex:
+      generic: true
   - toc:
       permalink: true
   - pymdownx.highlight
@@ -40,6 +42,10 @@ markdown_extensions:
 
 extra_css:
   - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
   - Home: index.md
@@ -53,6 +59,9 @@ nav:
       - Generative Modeling:
           - generative-modeling/index.md
           - Diffusion Primer: generative-modeling/diffusion-primer.md
+          - DDPM Notes: generative-modeling/ddpm-notes.md
+          - Score Matching Notes: generative-modeling/score-matching-notes.md
+          - Flow Matching Notes: generative-modeling/flow-matching-notes.md
   - Writing Notes:
       - Contribution Guide: contributing.md
       - Note Template: workflows/note-template.md
