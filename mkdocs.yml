@@ -1,0 +1,58 @@
+site_name: Learning Notes
+site_description: Technical learning notes for AI/ML research, models, and systems.
+site_url: https://jnmz.github.io/learning_note/
+repo_url: https://github.com/jnmz/learning_note
+repo_name: jnmz/learning_note
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  font:
+    text: Source Serif 4
+    code: JetBrains Mono
+  palette:
+    - scheme: default
+      primary: white
+      accent: blue grey
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Topics:
+      - Unified Models:
+          - unified-models/index.md
+          - Unified Multimodal Models Overview: unified-models/unified-multimodal-models-overview.md
+      - Vision-Language Models:
+          - vlm/index.md
+          - VLM Reading Map: vlm/vlm-reading-map.md
+      - Generative Modeling:
+          - generative-modeling/index.md
+          - Diffusion Primer: generative-modeling/diffusion-primer.md
+  - Writing Notes:
+      - Contribution Guide: contributing.md
+      - Note Template: workflows/note-template.md
