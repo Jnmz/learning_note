@@ -68,3 +68,4 @@ Daily AI or Codex changes should go to `codex-staging` first. Prefer `.github/wo
 ## Notes Workflow
 
 Use `docs/contributing.md` as the canonical note-writing workflow and `docs/workflows/note-template.md` as the reusable template.
+Technical notes in this repository are expected to follow stricter derivation depth and structured writing standards; see `AGENTS.md` for the repository-level rules used by Codex and other AI agents.
