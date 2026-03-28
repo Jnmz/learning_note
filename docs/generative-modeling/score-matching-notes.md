@@ -13,196 +13,285 @@
 
 ## One-Sentence Takeaway
 
-Score matching learns the gradient of log density directly, avoiding an intractable partition function, and denoising diffusion training can be understood as learning these scores across a ladder of noise scales.
+Score matching learns the gradient of log density instead of the density itself, which removes the partition function from the learning target and naturally leads to denoising score matching, diffusion training, and score-based sampling.
 
-## What Is A Score?
+## Background / Problem Setup
 
-For a density \( p(x) \), the **score** is
-
-\[
-s_p(x) = \nabla_x \log p(x).
-\]
-
-It points in the direction where the log density increases fastest.
-
-Two useful intuitions:
-
-- near high-density regions, the score tends to point inward;
-- if we know the score everywhere, we know a lot about the geometry of the distribution even when the normalized density is hard to compute.
-
-## Why Not Fit The Density Directly?
-
-Suppose we model
+Suppose our model is an energy-based model
 
 \[
-p_\theta(x) = \frac{1}{Z_\theta}\exp(-E_\theta(x)),
+p_\theta(x)=\frac{1}{Z_\theta}\exp(-E_\theta(x)).
 \]
 
-where \( Z_\theta \) is the partition function. Maximum likelihood needs gradients of \( \log Z_\theta \), which are often intractable.
+Maximum likelihood is often difficult because \( Z_\theta \) is intractable. Score matching avoids this by learning not the density itself, but its gradient with respect to \( x \).
 
-But the score removes the partition function:
+This perspective matters because it is one of the cleanest conceptual bridges from classical energy-based models to modern diffusion and score-based generative modeling.
+
+## Notation
+
+- \( p_{\text{data}}(x) \): data density.
+- \( p_\theta(x) \): model density.
+- \( E_\theta(x) \): energy function.
+- \( Z_\theta \): partition function.
+- \( s_\theta(x)=\nabla_x\log p_\theta(x) \): model score.
+- \( s_{\text{data}}(x)=\nabla_x\log p_{\text{data}}(x) \): data score.
+- \( \nabla\cdot s_\theta(x) \): divergence of the score field.
+- \( \sigma \): Gaussian corruption scale.
+- \( \tilde{x} \): noisy observation.
+
+## Core Idea
+
+The score of a density \( p(x) \) is
 
 \[
-\nabla_x \log p_\theta(x)
-= \nabla_x \bigl(-E_\theta(x) - \log Z_\theta\bigr)
-= -\nabla_x E_\theta(x).
+s_p(x)=\nabla_x\log p(x).
 \]
 
-Because \( Z_\theta \) does not depend on \( x \), it disappears when differentiating with respect to \( x \). This is the algebraic reason score matching is attractive.
+It points in the direction of steepest increase of log density. If we know this vector field everywhere, we know a lot about the geometry of the distribution even when the normalized density itself is hard to compute.
 
-## Fisher Divergence Objective
+The central mathematical story is:
 
-Let \( p_{\text{data}} \) be the true density and \( p_\theta \) the model. Score matching minimizes the Fisher divergence:
+1. differentiating \( \log p_\theta(x) \) removes the partition function;
+2. Fisher divergence can be rewritten without the unknown data score;
+3. Gaussian corruption yields denoising score matching;
+4. diffusion training is a time-indexed version of that denoising objective.
+
+## Detailed Derivation
+
+### Derivation Block 1: Score Definition Removes The Partition Function
+
+Start from
+
+\[
+p_\theta(x)=\frac{1}{Z_\theta}\exp(-E_\theta(x)).
+\]
+
+Take logs:
+
+\[
+\log p_\theta(x)=-E_\theta(x)-\log Z_\theta.
+\]
+
+Differentiate with respect to \( x \):
+
+\[
+\nabla_x\log p_\theta(x)
+= \nabla_x\bigl(-E_\theta(x)-\log Z_\theta\bigr).
+\]
+
+Since \( Z_\theta \) depends on parameters but not on the variable \( x \),
+
+\[
+\nabla_x \log Z_\theta = 0.
+\]
+
+Therefore
+
+\[
+s_\theta(x)=\nabla_x\log p_\theta(x)=-\nabla_x E_\theta(x).
+\]
+
+This is the first key reason score matching is attractive: it accesses local geometry without requiring the model normalizer.
+
+### Derivation Block 2: Fisher Divergence To Hyvarinen's Objective
+
+The ideal objective is the Fisher divergence
 
 \[
 J(\theta)
-= \frac{1}{2}\int p_{\text{data}}(x)
-\left\| s_\theta(x) - s_{\text{data}}(x)\right\|^2 dx.
+= \frac{1}{2}\int p_{\text{data}}(x)\|s_\theta(x)-s_{\text{data}}(x)\|^2 dx.
 \]
 
-At first glance this looks unusable because \( s_{\text{data}}(x)=\nabla_x \log p_{\text{data}}(x) \) is unknown.
-
-The trick is to expand the square:
+Expand the square:
 
 \[
 \begin{aligned}
 J(\theta)
 &= \frac{1}{2}\int p_{\text{data}}(x)\|s_\theta(x)\|^2 dx \\
-&\quad - \int p_{\text{data}}(x) s_\theta(x)^\top s_{\text{data}}(x) dx
-+ \frac{1}{2}\int p_{\text{data}}(x)\|s_{\text{data}}(x)\|^2 dx.
+&\quad - \int p_{\text{data}}(x)s_\theta(x)^\top s_{\text{data}}(x)\,dx \\
+&\quad + \frac{1}{2}\int p_{\text{data}}(x)\|s_{\text{data}}(x)\|^2 dx.
 \end{aligned}
 \]
 
-The last term does not depend on \( \theta \), so it can be dropped. The remaining problem is the cross term.
-
-## Integration By Parts Derivation
-
-Use the identity
+The last term does not depend on \( \theta \), so the only nontrivial term is
 
 \[
-s_{\text{data}}(x)=\nabla_x \log p_{\text{data}}(x)
+\int p_{\text{data}}(x)s_\theta(x)^\top s_{\text{data}}(x)\,dx.
+\]
+
+Now use the score definition
+
+\[
+s_{\text{data}}(x)=\nabla_x\log p_{\text{data}}(x)
 = \frac{\nabla_x p_{\text{data}}(x)}{p_{\text{data}}(x)}.
 \]
 
-Then
+Substitute it:
 
 \[
-\int p_{\text{data}}(x) s_\theta(x)^\top s_{\text{data}}(x) dx
-= \int s_\theta(x)^\top \nabla_x p_{\text{data}}(x)\, dx.
+\int p_{\text{data}}(x)s_\theta(x)^\top s_{\text{data}}(x)\,dx
+= \int s_\theta(x)^\top \nabla_x p_{\text{data}}(x)\,dx.
 \]
 
-Handle coordinates one by one. For the \( i \)-th coordinate,
+Now apply integration by parts coordinatewise. For coordinate \( i \),
 
 \[
 \int s_{\theta,i}(x)\,\partial_i p_{\text{data}}(x)\,dx
-= - \int p_{\text{data}}(x)\,\partial_i s_{\theta,i}(x)\,dx,
+= \left[s_{\theta,i}(x)p_{\text{data}}(x)\right]_{\partial\Omega}
+- \int p_{\text{data}}(x)\,\partial_i s_{\theta,i}(x)\,dx.
 \]
 
-assuming boundary terms vanish. Summing over coordinates gives
+Assume the boundary term vanishes. Then
+
+\[
+\int s_{\theta,i}(x)\,\partial_i p_{\text{data}}(x)\,dx
+= - \int p_{\text{data}}(x)\,\partial_i s_{\theta,i}(x)\,dx.
+\]
+
+Summing over coordinates:
 
 \[
 \int s_\theta(x)^\top \nabla_x p_{\text{data}}(x)\,dx
-= -\int p_{\text{data}}(x)\,\nabla \cdot s_\theta(x)\,dx.
+= -\int p_{\text{data}}(x)\,\nabla\cdot s_\theta(x)\,dx.
 \]
 
-So score matching becomes
+Hence the optimization-relevant objective becomes
 
 \[
 J(\theta)
 = \mathbb{E}_{p_{\text{data}}}
 \left[
-\frac{1}{2}\|s_\theta(x)\|^2 + \nabla \cdot s_\theta(x)
+\frac{1}{2}\|s_\theta(x)\|^2 + \nabla\cdot s_\theta(x)
 \right]
 + C.
 \]
 
-This expression no longer contains the unknown data score explicitly.
+This is the classical score matching objective. The unknown data score has disappeared.
 
-## Why Plain Score Matching Is Hard In High Dimension
+### Derivation Block 3: Denoising Score Matching With Gaussian Corruption
 
-There are two practical issues:
-
-- the divergence term \( \nabla \cdot s_\theta(x) \) requires second derivatives of the energy or first derivatives of the score network;
-- real data often lies near a low-dimensional manifold, making the clean-data score unstable or ill-defined numerically.
-
-This motivates denoising variants.
-
-## Denoising Score Matching
-
-Let noisy observations be generated by
+Plain score matching is hard in high dimension because the divergence term is expensive and the clean-data score may be poorly behaved. So we smooth the data by Gaussian noise:
 
 \[
-\tilde{x} = x + \sigma \epsilon,
-\qquad \epsilon \sim \mathcal{N}(0,I).
+\tilde{x}=x+\sigma\epsilon,
+\qquad \epsilon\sim\mathcal{N}(0,I).
 \]
 
-Rather than learning the score of the clean data directly, we learn the score of the smoothed density \( p_\sigma(\tilde{x}) \).
-
-Vincent's denoising score matching result shows that minimizing a denoising regression objective recovers the score of the noisy density. For Gaussian noise, the target score is
+The conditional density is
 
 \[
-\nabla_{\tilde{x}} \log q_\sigma(\tilde{x}\mid x)
+q_\sigma(\tilde{x}\mid x)
+= \mathcal{N}(\tilde{x};x,\sigma^2I).
+\]
+
+Take logs:
+
+\[
+\log q_\sigma(\tilde{x}\mid x)
+= -\frac{d}{2}\log(2\pi\sigma^2)
+- \frac{1}{2\sigma^2}\|\tilde{x}-x\|^2.
+\]
+
+Differentiate with respect to \( \tilde{x} \):
+
+\[
+\nabla_{\tilde{x}}\log q_\sigma(\tilde{x}\mid x)
+= -\frac{1}{2\sigma^2}\nabla_{\tilde{x}}\|\tilde{x}-x\|^2
 = -\frac{\tilde{x}-x}{\sigma^2}.
 \]
 
-So the network can be trained with
+So the denoising score matching target is known analytically, and the loss becomes
 
 \[
-\mathcal{L}_{\text{DSM}}
+\mathcal{L}_{\mathrm{DSM}}
 = \mathbb{E}_{x,\tilde{x}}
 \left[
-\left\| s_\theta(\tilde{x},\sigma)
+\left\|
+s_\theta(\tilde{x},\sigma)
+- \nabla_{\tilde{x}}\log q_\sigma(\tilde{x}\mid x)
+\right\|^2
+\right]
+\]
+
+\[
+= \mathbb{E}_{x,\tilde{x}}
+\left[
+\left\|
+s_\theta(\tilde{x},\sigma)
 + \frac{\tilde{x}-x}{\sigma^2}
 \right\|^2
 \right].
 \]
 
-This is easier because:
+This is the step that makes score estimation practical for modern generative modeling.
 
-- the noisy density is smoother;
-- the target is available analytically from the corruption process;
-- multiple noise scales can cover both local and global structure.
+## Intuition / Interpretation
 
-## Connection To Diffusion Training
+- The score is a vector field telling us where density increases.
+- Classical score matching tries to match the clean-data vector field directly.
+- Denoising score matching first smooths the density, which makes that vector field easier to learn.
 
-In diffusion, we use
+I find it helpful to think of denoising score matching as geometry estimation on blurred data manifolds.
+
+## Relation To Other Methods
+
+### Relation To DDPM
+
+Diffusion uses the perturbation
 
 \[
-x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon.
+x_t=\sqrt{\bar{\alpha}_t}x_0+\sqrt{1-\bar{\alpha}_t}\epsilon.
 \]
 
-The conditional score of the Gaussian perturbation kernel is
+The corresponding conditional score is
 
 \[
 \nabla_{x_t}\log q(x_t\mid x_0)
-= -\frac{x_t-\sqrt{\bar{\alpha}_t}x_0}{1-\bar{\alpha}_t}
+= -\frac{x_t-\sqrt{\bar{\alpha}_t}x_0}{1-\bar{\alpha}_t}.
+\]
+
+Since
+
+\[
+x_t-\sqrt{\bar{\alpha}_t}x_0=\sqrt{1-\bar{\alpha}_t}\epsilon,
+\]
+
+we obtain
+
+\[
+\nabla_{x_t}\log q(x_t\mid x_0)
 = -\frac{\epsilon}{\sqrt{1-\bar{\alpha}_t}}.
 \]
 
-Therefore, if a network predicts \( \epsilon_\theta(x_t,t) \), then the corresponding score estimate is
+So DDPM epsilon-prediction is just score estimation with a deterministic rescaling:
 
 \[
 s_\theta(x_t,t)
 = -\frac{\epsilon_\theta(x_t,t)}{\sqrt{1-\bar{\alpha}_t}}.
 \]
 
-This shows that DDPM epsilon-prediction and denoising score matching are equivalent up to a deterministic scale factor.
+This is the direct link to [DDPM Notes](./ddpm-notes.md).
 
-## From Scores To Sampling
+### Relation To Langevin Sampling
 
-Once a score field is learned, there are two common ways to sample:
+Once we have a score estimator, we can sample with Langevin dynamics:
 
-1. simulate a reverse-time stochastic differential equation;
-2. solve the associated probability-flow ODE.
+\[
+x_{k+1}=x_k+\eta s_\theta(x_k)+\sqrt{2\eta}\,z_k,
+\qquad z_k\sim\mathcal{N}(0,I).
+\]
 
-The first keeps randomness during generation. The second gives a deterministic trajectory with the same marginal densities under suitable conditions.
+The gradient term moves toward high density and the noise term explores the space. This is the classical score-based sampling story.
 
-## How To Read The Big Picture
+### Relation To Flow Matching
 
-- score matching says "learn gradients of log density instead of the density itself";
-- denoising score matching says "estimate those gradients on smoothed distributions";
-- diffusion says "organize the smoothing process into a time-indexed path from data to noise";
-- score-based samplers say "integrate reverse dynamics defined by the learned score".
+Flow matching learns a velocity field rather than a score field, but score-based diffusion models also imply a probability-flow ODE. That means a score can induce deterministic transport dynamics. This is the main conceptual bridge to [Flow Matching Notes](./flow-matching-notes.md).
+
+## My Notes / Open Questions
+
+- The most important conceptual jump is not the Fisher divergence itself, but the denoising reformulation.
+- Score matching is a very clean "local geometry first" point of view on generative modeling.
+- A good future note would compare Langevin, reverse SDE, and probability-flow ODE sampling side by side.
 
 ## References
 

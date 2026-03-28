@@ -12,174 +12,297 @@
 
 ## One-Sentence Takeaway
 
-Flow matching learns a time-dependent vector field whose ODE transports a simple base distribution into the data distribution, so training becomes direct regression on target velocities along a chosen probability path.
+Flow matching learns a time-dependent velocity field whose ODE transports a simple base distribution to the data distribution, and its training objective works because conditional velocity regression recovers the marginal transport field by conditional expectation.
 
-## ODE View Of Generation
+## Background / Problem Setup
 
-Instead of a reverse Markov chain, flow matching starts from an ODE:
+DDPM and score-based models often start from stochastic noising processes. Flow matching starts from the transport viewpoint instead:
+
+1. choose a probability path \( \{p_t\}_{t\in[0,1]} \) between a simple source distribution and the data distribution;
+2. describe that path by a velocity field;
+3. learn the velocity field directly by regression.
+
+This is attractive because it makes generation look like continuous-time mass transport rather than reverse-time denoising.
+
+## Notation
+
+- \( p_0 \): source distribution, often \( \mathcal{N}(0,I) \).
+- \( p_1 \): target data distribution.
+- \( p_t \): intermediate marginal density at time \( t\in[0,1] \).
+- \( x_t \): state of a particle at time \( t \).
+- \( v_t(x) \): marginal velocity field.
+- \( p_t(x\mid x_0,x_1) \): conditional probability path.
+- \( u_t(x\mid x_0,x_1) \): conditional velocity field.
+- \( \mu_t(x_0,x_1) \): conditional path mean.
+- \( \sigma_t \): conditional path scale.
+- \( \pi(dx_0,dx_1) \): endpoint coupling.
+
+## Core Idea
+
+Flow matching starts from the ODE
 
 \[
-\frac{d x_t}{dt} = v_t(x_t),
-\qquad t \in [0,1].
+\frac{dx_t}{dt}=v_t(x_t).
 \]
 
-If we sample \( x_0 \sim p_0 \) from a simple base distribution and integrate the ODE to \( t=1 \), the pushforward distribution becomes \( p_1 \), which we want to match to the data distribution.
+If particles follow this ODE and \( x_0\sim p_0 \), then the induced density evolves from \( p_0 \) to \( p_1 \). The hard part is learning \( v_t \). Flow matching solves this by constructing a conditional path where the target velocity is analytically tractable.
 
-The unknown object is the vector field \( v_t(\cdot) \).
+## Detailed Derivation
 
-## Continuity Equation
+### Derivation Block 1: From ODE Dynamics To The Continuity Equation
 
-The density induced by the ODE evolves according to the continuity equation:
+Assume particles follow
 
 \[
-\partial_t p_t(x) + \nabla \cdot \bigl(p_t(x) v_t(x)\bigr) = 0.
+\dot{x}_t=v_t(x_t).
 \]
 
-This equation is the density-level analogue of moving particles with velocity \( v_t \).
-
-Read it as conservation of mass:
-
-- \( \partial_t p_t(x) \) measures local density change;
-- \( \nabla \cdot (p_t v_t) \) measures how probability mass flows in or out.
-
-## Probability Paths
-
-Flow matching assumes we choose an interpolation path \( p_t \) between:
-
-- \( p_0 \): a tractable source distribution such as \( \mathcal{N}(0,I) \);
-- \( p_1 \): the data distribution.
-
-The training problem is then:
-
-"Find a vector field whose induced dynamics realize this path."
-
-This separates model design into two pieces:
-
-1. choose a path \( p_t \);
-2. learn the vector field that is consistent with it.
-
-## Conditional Probability Paths
-
-The paper's practical trick is to define a path conditioned on a data sample \( x_1 \). Let \( x_0 \sim p_0 \) and \( x_1 \sim q \) be paired through some coupling. For each pair, define a conditional path \( p_t(x \mid x_0, x_1) \).
-
-Then define a conditional velocity field \( u_t(x \mid x_0, x_1) \) that exactly generates that path.
-
-The model \( v_\theta(x,t) \) is trained by regression:
+Let \( p_t(x) \) denote the density of \( x_t \). For any smooth test function \( \varphi(x) \),
 
 \[
-\mathcal{L}_{\text{FM}}
-= \mathbb{E}_{t, x_0, x_1, x_t}
-\left[
+\frac{d}{dt}\mathbb{E}_{p_t}[\varphi(x)]
+= \frac{d}{dt}\int \varphi(x)p_t(x)\,dx.
+\]
+
+By the chain rule along trajectories,
+
+\[
+\frac{d}{dt}\varphi(x_t)
+= \nabla \varphi(x_t)^\top \dot{x}_t
+= \nabla \varphi(x_t)^\top v_t(x_t).
+\]
+
+Taking expectation gives
+
+\[
+\frac{d}{dt}\int \varphi(x)p_t(x)\,dx
+= \int \nabla \varphi(x)^\top v_t(x)p_t(x)\,dx.
+\]
+
+Now apply integration by parts:
+
+\[
+\int \nabla \varphi(x)^\top v_t(x)p_t(x)\,dx
+= -\int \varphi(x)\,\nabla\cdot\bigl(p_t(x)v_t(x)\bigr)\,dx,
+\]
+
+assuming the boundary term vanishes.
+
+Therefore
+
+\[
+\int \varphi(x)\,\partial_t p_t(x)\,dx
+= -\int \varphi(x)\,\nabla\cdot\bigl(p_t(x)v_t(x)\bigr)\,dx.
+\]
+
+Since this holds for all test functions \( \varphi \), we obtain the continuity equation:
+
+\[
+\partial_t p_t(x)+\nabla\cdot\bigl(p_t(x)v_t(x)\bigr)=0.
+\]
+
+This equation is the density-level conservation law behind flow matching.
+
+### Derivation Block 2: Conditional Gaussian Path And Conditional Velocity
+
+Choose a conditional path between endpoints \( x_0 \sim p_0 \) and \( x_1 \sim p_1 \):
+
+\[
+p_t(x\mid x_0,x_1)
+= \mathcal{N}\bigl(x;\mu_t(x_0,x_1),\sigma_t^2 I\bigr).
+\]
+
+Use the reparameterization
+
+\[
+x_t = \mu_t(x_0,x_1) + \sigma_t \epsilon,
+\qquad \epsilon\sim\mathcal{N}(0,I).
+\]
+
+Differentiate with respect to time:
+
+\[
+\frac{dx_t}{dt}
+= \partial_t \mu_t(x_0,x_1)+\dot{\sigma}_t\epsilon.
+\]
+
+Now solve the reparameterization for \( \epsilon \):
+
+\[
+\epsilon = \frac{x_t-\mu_t(x_0,x_1)}{\sigma_t}.
+\]
+
+Substitute back:
+
+\[
+u_t(x_t\mid x_0,x_1)
+= \partial_t \mu_t(x_0,x_1)
++ \frac{\dot{\sigma}_t}{\sigma_t}\bigl(x_t-\mu_t(x_0,x_1)\bigr).
+\]
+
+This is the conditional velocity target. It is available in closed form because the conditional path was chosen to be analytically simple.
+
+For the common linear mean path
+
+\[
+\mu_t(x_0,x_1)=(1-t)x_0 + tx_1,
+\]
+
+we have
+
+\[
+\partial_t \mu_t(x_0,x_1)=x_1-x_0,
+\]
+
+so
+
+\[
+u_t(x_t\mid x_0,x_1)
+= (x_1-x_0)
++ \frac{\dot{\sigma}_t}{\sigma_t}\bigl(x_t-\mu_t(x_0,x_1)\bigr).
+\]
+
+This derivation explicitly uses reparameterization and variable substitution.
+
+### Derivation Block 3: Why Conditional Velocity Regression Recovers The Marginal Field
+
+The training objective is
+
+\[
+\mathcal{L}_{\mathrm{FM}}
+= \mathbb{E}\left[
 \|v_\theta(x_t,t)-u_t(x_t\mid x_0,x_1)\|^2
 \right],
 \]
 
-where \( x_t \sim p_t(\cdot \mid x_0,x_1) \).
+where \( x_t\sim p_t(\cdot\mid x_0,x_1) \).
 
-This looks simple, but there is a conceptual leap hidden inside: the target is a velocity, not a score or a noise term.
+Fix time \( t \) and location \( x \). The pointwise regression problem is
 
-## Why Conditional Regression Solves The Marginal Problem
+\[
+\min_v \mathbb{E}\left[
+\|v-u_t(x_t\mid x_0,x_1)\|^2 \mid x_t=x
+\right].
+\]
 
-The model only sees \( x_t \) and \( t \), not the endpoints \( x_0, x_1 \). Why does regressing toward conditional velocities help?
+Expand the square:
 
-The key identity is conditional expectation. The optimal mean-squared predictor is
+\[
+\mathbb{E}\left[
+\|v-u\|^2 \mid x_t=x
+\right]
+= \|v\|^2 - 2v^\top \mathbb{E}[u\mid x_t=x] + \mathbb{E}[\|u\|^2\mid x_t=x].
+\]
+
+Differentiate with respect to \( v \) and set to zero:
+
+\[
+2v - 2\mathbb{E}[u\mid x_t=x] = 0.
+\]
+
+Hence the optimal predictor is
 
 \[
 v_t^\star(x)
-= \mathbb{E}[u_t(x_t \mid x_0,x_1)\mid x_t=x].
+= \mathbb{E}\bigl[u_t(x_t\mid x_0,x_1)\mid x_t=x\bigr].
 \]
 
-So the trained field is the average conditional velocity at location \( x \) and time \( t \). Under the construction in the flow-matching paper, this averaged field is precisely the marginal field that transports the full path \( p_t \).
-
-This is why the objective is practical:
-
-- the conditional target \( u_t \) is analytically available;
-- the marginal target would be hard to write directly;
-- regression recovers the needed marginal field automatically.
-
-## The Gaussian Path Example
-
-One common choice is a Gaussian bridge-style path:
+Now check that this field transports the marginal path. The marginal density is
 
 \[
-p_t(x \mid x_0,x_1)
-= \mathcal{N}\bigl(x; \mu_t(x_0,x_1), \sigma_t^2 I\bigr),
+p_t(x)=\int p_t(x\mid x_0,x_1)\,\pi(dx_0,dx_1).
 \]
 
-with a mean path such as
+Differentiate with respect to time and use the conditional continuity equation:
 
 \[
-\mu_t(x_0,x_1) = (1-t)x_0 + t x_1.
+\partial_t p_t(x)
+= \int \partial_t p_t(x\mid x_0,x_1)\,\pi(dx_0,dx_1)
 \]
-
-If we reparameterize
 
 \[
-x_t = \mu_t(x_0,x_1) + \sigma_t \epsilon,
-\qquad \epsilon \sim \mathcal{N}(0,I),
+= -\int \nabla\cdot\bigl(p_t(x\mid x_0,x_1)u_t(x\mid x_0,x_1)\bigr)\,\pi(dx_0,dx_1).
 \]
 
-then differentiating with respect to time gives the conditional velocity target:
+Move divergence outside the integral:
 
 \[
-u_t(x_t \mid x_0,x_1)
-= \partial_t \mu_t(x_0,x_1) + \frac{\dot{\sigma}_t}{\sigma_t}\bigl(x_t-\mu_t(x_0,x_1)\bigr).
+\partial_t p_t(x)
+= -\nabla\cdot\left(
+\int p_t(x\mid x_0,x_1)u_t(x\mid x_0,x_1)\,\pi(dx_0,dx_1)
+\right).
 \]
 
-This formula is worth pausing on:
+By the definition of conditional expectation,
 
-- \( \partial_t \mu_t \) moves the mean along the interpolation path;
-- the second term rescales deviations around the mean as the Gaussian width changes.
+\[
+\int p_t(x\mid x_0,x_1)u_t(x\mid x_0,x_1)\,\pi(dx_0,dx_1)
+= p_t(x)\,v_t^\star(x).
+\]
 
-When \( \sigma_t \) shrinks toward zero near the data endpoint, the flow becomes increasingly focused.
+Therefore
 
-## Relation To Diffusion And Score Models
+\[
+\partial_t p_t(x)+\nabla\cdot\bigl(p_t(x)v_t^\star(x)\bigr)=0.
+\]
 
-There are several close connections.
+So the regression optimum is exactly the marginal velocity field that realizes the full probability path.
 
-### 1. Both Learn Local Fields
+## Intuition / Interpretation
 
-- diffusion often learns noise \( \epsilon_\theta \);
-- score models learn \( s_\theta = \nabla_x \log p_t(x) \);
-- flow matching learns velocity \( v_\theta \).
+- The continuity equation says probability mass is conserved as particles move.
+- The conditional path gives us easy local supervision signals.
+- Conditional expectation stitches those local signals into the correct marginal transport field.
 
-All three are local geometric signals attached to \( x_t \).
+I find this much easier to reason about once I stop thinking in terms of denoising and start thinking in terms of moving probability mass.
 
-### 2. Probability-Flow ODE Bridge
+## Relation To Other Methods
 
-Score-based diffusion models have an associated probability-flow ODE. That means a score model can also be interpreted as defining a deterministic transport field.
+### Relation To DDPM
 
-Flow matching starts directly from this transport viewpoint instead of deriving it from a stochastic process.
+DDPM uses a discrete stochastic chain and learns reverse denoising transitions. Flow matching uses a continuous-time probability path and learns a velocity field. Both are path-based generative methods, but the local supervision differs:
 
-### 3. Training Differences
+- DDPM target: noise or posterior mean.
+- flow-matching target: velocity.
 
-Diffusion training is tied to a noising process and often to specific variance schedules.
+See [DDPM Notes](./ddpm-notes.md) for the discrete Gaussian-chain perspective.
 
-Flow matching is more path-centric:
+### Relation To Score Matching
 
-- choose a probability path;
-- derive its target velocity;
-- regress the field directly.
+Score-based models learn
 
-This can simplify training and make the connection to optimal transport more explicit.
+\[
+s_t(x)=\nabla_x\log p_t(x).
+\]
 
-## Practical Summary
+For an SDE
 
-- choose a source distribution \( p_0 \);
-- choose an interpolation path \( p_t \);
-- derive the conditional velocity target \( u_t \);
-- fit \( v_\theta(x,t) \) with squared loss;
-- sample by solving the learned ODE from \( t=0 \) to \( t=1 \).
+\[
+dx = f(x,t)\,dt + g(t)\,dW_t,
+\]
 
-## When This Perspective Helps
+the associated probability-flow ODE is
 
-I find flow matching especially clarifying when diffusion notation starts to feel overloaded. It strips the story down to transport:
+\[
+\frac{dx}{dt}
+= f(x,t) - \frac{1}{2}g(t)^2\nabla_x\log p_t(x).
+\]
 
-- what path do particles follow?
-- what instantaneous velocity moves them?
-- how do local motions accumulate into a global generative map?
+So a score field induces a deterministic velocity field. Flow matching starts directly from that ODE-style viewpoint rather than deriving it from an SDE first. This is the main bridge to [Score Matching Notes](./score-matching-notes.md).
 
-That makes it a useful bridge between diffusion models, continuous normalizing flows, and optimal transport-flavored formulations.
+### ODE, SDE, And Continuity Equation
+
+- ODE: describes deterministic particle motion.
+- SDE: describes stochastic particle motion with diffusion noise.
+- continuity equation: describes how the density evolves under the chosen dynamics.
+
+These are complementary descriptions at the trajectory level, stochastic level, and density level.
+
+## My Notes / Open Questions
+
+- The conditional expectation proof is the conceptual center of flow matching; without it, the method can look like an arbitrary regression trick.
+- Flow matching feels especially clarifying when comparing deterministic transport to score-based probability-flow ODEs.
+- A useful future note would compare rectified flow, optimal transport flow matching, and classical score-based probability-flow ODEs.
 
 ## References
 
