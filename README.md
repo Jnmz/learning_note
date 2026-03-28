@@ -14,6 +14,8 @@ This repository is scaffolded as a documentation website using MkDocs + Material
 
 ```text
 .
+├── .github/workflows/codex-apply.yml
+├── .github/workflows/docs-update.yml
 ├── .github/workflows/deploy.yml
 ├── docs/
 │   ├── index.md
@@ -56,6 +58,10 @@ To publish:
 2. In the repository settings, open `Settings -> Pages`.
 3. Set `Source` to `GitHub Actions`.
 4. Push to the default branch; the workflow will build and deploy the site.
+
+## Automation
+
+This repository also supports automated write-back through GitHub App bot credentials. Prefer `.github/workflows/codex-apply.yml` for Codex-driven repository updates so commits are recorded as the configured bot identity instead of your personal GitHub account. `.github/workflows/docs-update.yml` is the lightweight companion check for docs, MkDocs config, and README changes, and does not replace the existing Pages deploy workflow.
 
 ## Notes Workflow
 
