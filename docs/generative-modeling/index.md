@@ -15,6 +15,7 @@ This section collects notes on models that learn to generate data, with emphasis
 - [DDPM Notes](./ddpm-notes.md): a structured derivation note covering forward Gaussian noising, posterior mean algebra, ELBO decomposition, and epsilon-prediction.
 - [Score Matching Notes](./score-matching-notes.md): a structured derivation note covering Fisher divergence, Hyvarinen's objective, denoising score matching, and the bridge to diffusion training.
 - [Flow Matching Notes](./flow-matching-notes.md): a structured derivation note covering the continuity equation, conditional Gaussian paths, conditional velocity regression, and probability-flow ODE connections.
+- [VAE And ELBO Notes](./vae-elbo-notes.md): a structured derivation note covering variational inference, ELBO decomposition, Gaussian reparameterization, and closed-form KL.
 
 ## Suggested Future Notes
 
