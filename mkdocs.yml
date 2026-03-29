@@ -62,6 +62,7 @@ nav:
           - DDPM Notes: generative-modeling/ddpm-notes.md
           - Score Matching Notes: generative-modeling/score-matching-notes.md
           - Flow Matching Notes: generative-modeling/flow-matching-notes.md
+          - VAE And ELBO Notes: generative-modeling/vae-elbo-notes.md
   - Writing Notes:
       - Contribution Guide: contributing.md
       - Note Template: workflows/note-template.md
