@@ -115,10 +115,13 @@ These rules apply whenever an agent adds or edits mathematical content in this r
 These rules apply after changes are pushed to `codex-staging`.
 
 - Task completion should not stop at "pushed to codex-staging" when the repository automation is expected to promote changes to `main`.
+- For `codex-staging` -> `main` automation, do not use "the original staging commit hash or commit message appears unchanged on `main`" as the only success criterion.
 - After pushing to `codex-staging`, the agent should try to check:
   - whether the push succeeded
-  - whether the relevant workflow was triggered
-  - whether promotion to `main` appears to have completed
+  - whether the relevant promote workflow was triggered and completed successfully
+  - whether a new bot promote commit appeared on `main`
+  - whether the target file content on `main` matches the staging change
+  - whether the relevant files still differ between `origin/main` and `origin/codex-staging`, when content confirmation is still unclear
 - If promotion fails, the agent should first try the obvious repository-maintenance steps:
   - sync the latest `origin/main` into `codex-staging`
   - resolve straightforward text or documentation conflicts
@@ -127,4 +130,11 @@ These rules apply after changes are pushed to `codex-staging`.
   - which step failed
   - whether the issue is a workflow failure, branch conflict, rendering problem, or permission problem
   - what manual action is still required
-- Final task reports should include not only whether the changes were pushed to `codex-staging`, but also whether the agent observed the changes reaching `main`; if not, the report should state the reason.
+- If a new bot promote commit is already visible on `main` but content-level confirmation is not finished, do not report "not yet in `main`" as a final conclusion. Report the more precise state instead:
+  - promote commit observed, content confirmation still pending
+  - or content confirmed on `main`
+- Final task reports should describe `main` status in separate fields when possible, instead of a single yes/no judgment:
+  - pushed to `codex-staging`
+  - promote workflow observed
+  - bot promote commit observed on `main`
+  - content confirmed on `main`
