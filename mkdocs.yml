@@ -53,6 +53,15 @@ nav:
       - 统一模型:
           - unified-models/index.md
           - 统一多模态模型总览: unified-models/unified-multimodal-models-overview.md
+          - DreamLLM 笔记: unified-models/dreamllm-notes.md
+          - Emu3 笔记: unified-models/emu3-notes.md
+          - Janus 笔记: unified-models/janus-notes.md
+          - Transfusion 笔记: unified-models/transfusion-notes.md
+          - Orthus 笔记: unified-models/orthus-notes.md
+          - Chameleon 笔记: unified-models/chameleon-notes.md
+          - MMaDA 笔记: unified-models/mmada-notes.md
+          - LLaDA-o 笔记: unified-models/llada-o-notes.md
+          - Uni-RS 笔记: unified-models/uni-rs-notes.md
           - Show-o 笔记: unified-models/show-o-notes.md
           - Show-o2 笔记: unified-models/show-o2-notes.md
       - 视觉语言模型:
