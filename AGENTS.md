@@ -134,6 +134,14 @@ These rules apply after changes are pushed to `codex-staging`.
   - sync the latest `origin/main` into `codex-staging`
   - resolve straightforward text or documentation conflicts
   - push the updated `codex-staging` branch again
+- If `main` contains merge-conflict markers such as `<<<<<<<`, `=======`, or `>>>>>>>` in target files, treat that as a content corruption problem rather than a normal "not yet promoted" state.
+- When conflict markers are found on `main`, the agent should:
+  - confirm whether `codex-staging` contains the clean intended version
+  - restore the affected files on `codex-staging` to the last known-good content if needed
+  - push a corrective commit to `codex-staging`
+  - explicitly verify afterward that the conflict markers disappeared from `main`
+- If `codex-staging` is correct but promotion still does not update `main`, the agent should inspect the promotion workflow logic rather than assuming the remaining problem is only branch divergence.
+- For repositories using automation that promotes branch content into `main`, prefer tree/content synchronization behavior over squash-merge behavior when squash-merge replay can reintroduce conflicts already present on `main`.
 - If the workflow still does not close the loop automatically, the agent must report clearly:
   - which step failed
   - whether the issue is a workflow failure, branch conflict, rendering problem, or permission problem
