@@ -12,6 +12,7 @@
 
 ## 一句话总结
 
+<<<<<<< HEAD
 MMaDA 的重要性在于，它尝试把统一模型的中心动力学从 autoregressive 迁移到 diffusion，并进一步把这种统一从预训练延伸到 CoT 微调和强化学习阶段。
 
 ## 背景 / 问题设定
@@ -22,19 +23,37 @@ MMaDA 的重要性在于，它尝试把统一模型的中心动力学从 autoreg
 - 如果统一真的围绕 diffusion 展开，后训练、推理和强化学习又该怎么配套？
 
 因此它关心的不是“把 diffusion 接到 LLM 上”，而是“以 diffusion 为中心重写统一模型范式”。
+=======
+MMaDA 代表了一条与 AR 统一路线明显不同的方向：它试图把文本推理、多模态理解和图像生成统一到一个 diffusion foundation model 中，并进一步配套统一的 CoT 微调与 diffusion 专用强化学习。
+
+## 背景 / 问题设定
+
+到 2025 年前后，统一模型大多仍以自回归 transformer 为默认核心，而 MMaDA 提出一个更激进的问题：
+
+- 如果 diffusion 在视觉生成上已经很强，是否也能成为更一般的多模态 foundation model 框架？
+- 统一不一定要围绕 next-token prediction 展开，是否可以围绕统一 diffusion 概率形式展开？
+>>>>>>> origin/main
 
 ## 记号
 
 设：
 
+<<<<<<< HEAD
 - 多模态状态序列为 \(x\)
 - 扩散时间步为 \(t\)
 - 统一 diffusion 目标记为 \(\mathcal{L}_{\text{diff}}\)
 - 长链推理微调目标记为 \(\mathcal{L}_{\text{CoT}}\)
+=======
+- 多模态 token / state 序列为 \(x\)
+- 扩散时间步为 \(t\)
+- 模型参数为 \(\theta\)
+- 统一 diffusion 目标记为 \(\mathcal{L}_{\text{diff}}\)
+>>>>>>> origin/main
 - 强化学习阶段目标记为 \(\mathcal{L}_{\text{RL}}\)
 
 ## 核心思想
 
+<<<<<<< HEAD
 ### 1. 用 diffusion 统一 foundation model
 
 MMaDA 不把 diffusion 仅仅当作图像生成子模块，而是把它提升为统一模型的基本概率建模形式。
@@ -137,10 +156,56 @@ MMaDA 的训练是分阶段理解最合适：
 ### 它留下了什么问题？
 
 它留下的问题在于：diffusion 作为统一 backbone，在长文本、高频交互和工具使用等方向上，是否能真正建立和 AR-LM 同等成熟的生态。
+=======
+### 1. 统一 diffusion 架构
+
+MMaDA 不把 diffusion 当成单独的图像生成组件，而是把它提升为统一 foundation model 的基本建模形式。
+
+### 2. 模态无关设计
+
+论文特别强调 modality-agnostic design，目标是尽量减少模态专属子模块，让文本、图像和多模态任务能在同一概率框架下被处理。
+
+### 3. 从预训练一路打通到后训练
+
+MMaDA 不只提预训练架构，还把 mixed long CoT fine-tuning 和 UniGRPO 强化学习一起纳入统一方法论，试图把 reasoning 与 generation 的后训练也统一起来。
+
+## 关键机制
+
+### Unified Diffusion Pretraining
+
+模型在统一 diffusion 目标下学习多模态基础能力，这与传统“文本 AR + 图像 diffusion”的混合路线不同。
+
+### Mixed Long CoT Fine-Tuning
+
+这部分很有辨识度。论文认为跨模态 reasoning 不应该只停留在结构统一，还要把 textual CoT 与 visual / multimodal CoT 的格式与习惯统一起来。
+
+### UniGRPO
+
+UniGRPO 是针对 diffusion foundation model 设计的统一 RL 算法。它说明 MMaDA 不只是一个预训练架构提案，而是在试图建立“diffusion 版统一大模型”的完整训练范式。
+
+## 直觉 / 理解
+
+MMaDA 像是在挑战一个默认假设：统一模型未必要围绕 LLM 范式组织，diffusion 也可能成为更一般的认知与生成基础框架。
+
+## 与其他方法的关系
+
+### 对比 Emu3 / Chameleon
+
+Emu3 和 Chameleon 强调 AR token 统一；MMaDA 则把统一建立在 diffusion 概率建模上。
+
+### 对比 Show-o / Transfusion
+
+Show-o 和 Transfusion 都是“文本侧仍偏 AR”的折中路线；MMaDA 则更彻底地把统一中心移向 diffusion。
+
+### 对比 LLaDA-o
+
+两者都属于 omni-diffusion 叙事，但 LLaDA-o 更强调混合离散 / 连续 diffusion 与长度自适应，MMaDA 更强调统一后训练与 RL。
+>>>>>>> origin/main
 
 ## 重要细节
 
 - Architecture: 统一 diffusion foundation model
+<<<<<<< HEAD
 - Objective: diffusion 预训练 + mixed long CoT fine-tuning + UniGRPO 后训练
 - Data: 文本推理、多模态理解、图像生成与 CoT 数据
 - Evaluation: textual reasoning、multimodal understanding、text-to-image generation
@@ -152,6 +217,18 @@ MMaDA 的训练是分阶段理解最合适：
 MMaDA 在统一模型链条里的意义很像一次范式挑战。它最有价值的地方，不是某项单点性能，而是逼着研究者重新问：统一模型的基础对象到底应该是 token，还是更一般的概率动力学？
 
 它的主要局限是，这条路线还处在系统哲学强于工程成熟度的阶段。但也正因为如此，它对后续 omni-diffusion 方法提供了非常直接的启发。
+=======
+- Objective: 多模态 diffusion 预训练 + mixed long CoT 微调 + UniGRPO 后训练
+- Data: 文本推理、多模态理解、图像生成数据
+- Evaluation: textual reasoning、multimodal understanding、text-to-image generation
+- Strengths: 把统一从预训练延展到后训练；扩散路线更原教旨
+- Limitations: diffusion 统一范式仍较新；文本侧效率和推理习惯仍需更多验证
+
+## 我的笔记 / 开放问题
+
+- MMaDA 的重要性在于它不再接受“语言必须 AR、视觉才 diffusion”这个分工，而是重新提问统一模型的中心动力学。
+- 这条路线能否在大规模长上下文文本任务上真正和 AR LLM 抗衡，是接下来最关键的问题之一。
+>>>>>>> origin/main
 
 ## 相关笔记
 
