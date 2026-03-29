@@ -95,3 +95,36 @@ For the following recurring derivation types, the note must explicitly state wha
 - Define notation before using it heavily.
 - Distinguish clearly between formal derivation, intuition, and personal commentary.
 - End with concrete references that readers can use to trace the original sources.
+
+## Math Rendering And Build Rules
+
+These rules apply whenever an agent adds or edits mathematical content in this repository.
+
+- This repository uses MkDocs + Material + arithmatex + MathJax. Mathematical content must not only build successfully, but also render correctly in the generated site.
+- In Markdown list items, avoid placing block-level display equations directly under a bullet unless the current rendering path is known to support that structure correctly.
+- For mathematical content, prefer safer rendering patterns:
+  - inline math for short expressions inside list items or prose
+  - standalone block equations outside lists
+  - plain paragraph splits when mixing explanation and formulas is clearer
+- After adding or modifying a technical note that contains mathematical formulas, the agent must run at least one site build check.
+- If the change affects important formula presentation, the agent should actively verify rendering behavior and not treat `mkdocs build` success alone as sufficient evidence.
+- If a rendering issue appears, prefer rewriting the Markdown structure into a more stable form before changing global site configuration.
+
+## Staging To Main Promotion Checks
+
+These rules apply after changes are pushed to `codex-staging`.
+
+- Task completion should not stop at "pushed to codex-staging" when the repository automation is expected to promote changes to `main`.
+- After pushing to `codex-staging`, the agent should try to check:
+  - whether the push succeeded
+  - whether the relevant workflow was triggered
+  - whether promotion to `main` appears to have completed
+- If promotion fails, the agent should first try the obvious repository-maintenance steps:
+  - sync the latest `origin/main` into `codex-staging`
+  - resolve straightforward text or documentation conflicts
+  - push the updated `codex-staging` branch again
+- If the workflow still does not close the loop automatically, the agent must report clearly:
+  - which step failed
+  - whether the issue is a workflow failure, branch conflict, rendering problem, or permission problem
+  - what manual action is still required
+- Final task reports should include not only whether the changes were pushed to `codex-staging`, but also whether the agent observed the changes reaching `main`; if not, the report should state the reason.
