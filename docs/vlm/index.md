@@ -1,22 +1,21 @@
-# Vision-Language Models
+# 视觉语言模型
 
-This section tracks notes on models that connect visual understanding with language modeling, instruction following, grounding, and multimodal evaluation.
+这一部分记录连接视觉理解、语言建模、指令跟随、grounding 与多模态评测的模型笔记。
 
-## Scope
+## 范围
 
-- image-text pretraining
-- instruction-tuned multimodal assistants
-- grounding and perception
-- multimodal benchmarks
+- 图文预训练
+- 指令微调多模态助手
+- grounding 与感知
+- 多模态基准评测
 
-## Notes
+## 笔记
 
-- [VLM Reading Map](./vlm-reading-map.md): a starter orientation page for organizing VLM papers and concepts.
+- [VLM 阅读地图](./vlm-reading-map.md)：用于组织 VLM 论文与概念的起步页。
 
-## Suggested Future Notes
+## 后续可补充的笔记
 
-- contrastive versus generative pretraining
-- connector modules from vision encoders to LLMs
-- OCR, grounding, and chart understanding
-- multimodal hallucination and evaluation
-
+- 对比式与生成式预训练的差异
+- 从视觉编码器接入 LLM 的 connector 模块
+- OCR、grounding 与图表理解
+- 多模态幻觉与评测

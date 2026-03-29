@@ -1,6 +1,6 @@
-# Score Matching Notes
+# Score Matching 笔记
 
-## Metadata
+## 元信息
 
 - Topic: generative-modeling
 - Status: evergreen
@@ -8,101 +8,101 @@
 - Source type: derivation note
 - Primary references:
   - Score matching
-  - score-based generative modeling tutorials
-  - diffusion tutorials connecting epsilon prediction to scores
+  - score-based generative modeling 相关教程
+  - 连接 epsilon prediction 与 score 的 diffusion 教程
 
-## One-Sentence Takeaway
+## 一句话总结
 
-Score matching learns the gradient of log density instead of the density itself, which removes the partition function from the learning target and naturally leads to denoising score matching, diffusion training, and score-based sampling.
+Score matching 学习的是对数密度的梯度而不是密度本身，因此训练目标里会自然消掉 partition function，并进一步通向 denoising score matching、diffusion training 和 score-based sampling。
 
-## Background / Problem Setup
+## 背景 / 问题设定
 
-Suppose our model is an energy-based model
+设模型是一个 energy-based model：
 
 \[
 p_\theta(x)=\frac{1}{Z_\theta}\exp(-E_\theta(x)).
 \]
 
-Maximum likelihood is often difficult because \( Z_\theta \) is intractable. Score matching avoids this by learning not the density itself, but its gradient with respect to \( x \).
+最大似然通常很难做，因为 \( Z_\theta \) 往往不可积或难以计算。Score matching 的做法是，不直接学习密度本身，而是学习它关于 \( x \) 的梯度。
 
-This perspective matters because it is one of the cleanest conceptual bridges from classical energy-based models to modern diffusion and score-based generative modeling.
+这个视角很重要，因为它是从经典能量模型通向现代 diffusion 与 score-based generative modeling 的一条非常干净的概念路径。
 
-## Notation
+## 记号
 
-- \( p_{\text{data}}(x) \): data density.
-- \( p_\theta(x) \): model density.
-- \( E_\theta(x) \): energy function.
-- \( Z_\theta \): partition function.
-- \( s_\theta(x)=\nabla_x\log p_\theta(x) \): model score.
-- \( s_{\text{data}}(x)=\nabla_x\log p_{\text{data}}(x) \): data score.
-- \( \nabla\cdot s_\theta(x) \): divergence of the score field.
-- \( \sigma \): Gaussian corruption scale.
-- \( \tilde{x} \): noisy observation.
+- \( p_{\text{data}}(x) \)：数据分布。
+- \( p_\theta(x) \)：模型分布。
+- \( E_\theta(x) \)：能量函数。
+- \( Z_\theta \)：配分函数。
+- \( s_\theta(x)=\nabla_x\log p_\theta(x) \)：模型 score。
+- \( s_{\text{data}}(x)=\nabla_x\log p_{\text{data}}(x) \)：数据 score。
+- \( \nabla\cdot s_\theta(x) \)：score 场的散度。
+- \( \sigma \)：高斯扰动尺度。
+- \( \tilde{x} \)：加噪观测。
 
-## Core Idea
+## 核心思想
 
-The score of a density \( p(x) \) is
+一个密度 \( p(x) \) 的 score 定义为
 
 \[
 s_p(x)=\nabla_x\log p(x).
 \]
 
-It points in the direction of steepest increase of log density. If we know this vector field everywhere, we know a lot about the geometry of the distribution even when the normalized density itself is hard to compute.
+它指向对数密度增长最快的方向。如果我们在整个空间里都知道这个向量场，那么即便归一化密度难以显式计算，我们仍然掌握了分布的大量几何信息。
 
-The central mathematical story is:
+这里最核心的数学故事是：
 
-1. differentiating \( \log p_\theta(x) \) removes the partition function;
-2. Fisher divergence can be rewritten without the unknown data score;
-3. Gaussian corruption yields denoising score matching;
-4. diffusion training is a time-indexed version of that denoising objective.
+1. 对 \( \log p_\theta(x) \) 求导会消去 partition function；
+2. Fisher divergence 可以改写成不显式依赖数据 score 的形式；
+3. 用高斯噪声平滑数据之后，会得到 denoising score matching；
+4. diffusion 训练本质上就是带时间索引的 denoising score matching。
 
-## Detailed Derivation
+## 详细推导
 
-### Derivation Block 1: Score Definition Removes The Partition Function
+### 推导块 1：score 的定义如何消去 partition function
 
-Start from
+从
 
 \[
-p_\theta(x)=\frac{1}{Z_\theta}\exp(-E_\theta(x)).
+p_\theta(x)=\frac{1}{Z_\theta}\exp(-E_\theta(x))
 \]
 
-Take logs:
+开始。先取对数：
 
 \[
 \log p_\theta(x)=-E_\theta(x)-\log Z_\theta.
 \]
 
-Differentiate with respect to \( x \):
+再对 \( x \) 求梯度：
 
 \[
 \nabla_x\log p_\theta(x)
 = \nabla_x\bigl(-E_\theta(x)-\log Z_\theta\bigr).
 \]
 
-Since \( Z_\theta \) depends on parameters but not on the variable \( x \),
+因为 \( Z_\theta \) 依赖参数，但不依赖自变量 \( x \)，所以
 
 \[
 \nabla_x \log Z_\theta = 0.
 \]
 
-Therefore
+因此
 
 \[
 s_\theta(x)=\nabla_x\log p_\theta(x)=-\nabla_x E_\theta(x).
 \]
 
-This is the first key reason score matching is attractive: it accesses local geometry without requiring the model normalizer.
+这就是 score matching 吸引人的第一层原因：它只看局部几何，而不要求显式计算模型的归一化常数。
 
-### Derivation Block 2: Fisher Divergence To Hyvarinen's Objective
+### 推导块 2：从 Fisher divergence 到 Hyvarinen 目标
 
-The ideal objective is the Fisher divergence
+理想目标是 Fisher divergence：
 
 \[
 J(\theta)
 = \frac{1}{2}\int p_{\text{data}}(x)\|s_\theta(x)-s_{\text{data}}(x)\|^2 dx.
 \]
 
-Expand the square:
+把平方展开：
 
 \[
 \begin{aligned}
@@ -113,27 +113,27 @@ J(\theta)
 \end{aligned}
 \]
 
-The last term does not depend on \( \theta \), so the only nontrivial term is
+最后一项与 \( \theta \) 无关，所以真正麻烦的是
 
 \[
 \int p_{\text{data}}(x)s_\theta(x)^\top s_{\text{data}}(x)\,dx.
 \]
 
-Now use the score definition
+现在使用 score 的定义：
 
 \[
 s_{\text{data}}(x)=\nabla_x\log p_{\text{data}}(x)
 = \frac{\nabla_x p_{\text{data}}(x)}{p_{\text{data}}(x)}.
 \]
 
-Substitute it:
+代入后得到
 
 \[
 \int p_{\text{data}}(x)s_\theta(x)^\top s_{\text{data}}(x)\,dx
 = \int s_\theta(x)^\top \nabla_x p_{\text{data}}(x)\,dx.
 \]
 
-Now apply integration by parts coordinatewise. For coordinate \( i \),
+接着对每个坐标应用分部积分。对于第 \( i \) 个坐标，
 
 \[
 \int s_{\theta,i}(x)\,\partial_i p_{\text{data}}(x)\,dx
@@ -141,21 +141,21 @@ Now apply integration by parts coordinatewise. For coordinate \( i \),
 - \int p_{\text{data}}(x)\,\partial_i s_{\theta,i}(x)\,dx.
 \]
 
-Assume the boundary term vanishes. Then
+假设边界项为零，则
 
 \[
 \int s_{\theta,i}(x)\,\partial_i p_{\text{data}}(x)\,dx
 = - \int p_{\text{data}}(x)\,\partial_i s_{\theta,i}(x)\,dx.
 \]
 
-Summing over coordinates:
+对所有坐标求和：
 
 \[
 \int s_\theta(x)^\top \nabla_x p_{\text{data}}(x)\,dx
 = -\int p_{\text{data}}(x)\,\nabla\cdot s_\theta(x)\,dx.
 \]
 
-Hence the optimization-relevant objective becomes
+因此与优化相关的目标变成
 
 \[
 J(\theta)
@@ -166,25 +166,25 @@ J(\theta)
 + C.
 \]
 
-This is the classical score matching objective. The unknown data score has disappeared.
+这就是经典的 score matching 目标。未知的数据 score 已经消失了。
 
-### Derivation Block 3: Denoising Score Matching With Gaussian Corruption
+### 推导块 3：带高斯扰动的 denoising score matching
 
-Plain score matching is hard in high dimension because the divergence term is expensive and the clean-data score may be poorly behaved. So we smooth the data by Gaussian noise:
+直接做 score matching 在高维时往往并不方便，因为散度项难算，干净数据分布上的 score 也可能不够平滑。所以一个常见做法是先用高斯噪声把数据平滑掉：
 
 \[
 \tilde{x}=x+\sigma\epsilon,
 \qquad \epsilon\sim\mathcal{N}(0,I).
 \]
 
-The conditional density is
+条件分布是
 
 \[
 q_\sigma(\tilde{x}\mid x)
 = \mathcal{N}(\tilde{x};x,\sigma^2I).
 \]
 
-Take logs:
+取对数：
 
 \[
 \log q_\sigma(\tilde{x}\mid x)
@@ -192,7 +192,7 @@ Take logs:
 - \frac{1}{2\sigma^2}\|\tilde{x}-x\|^2.
 \]
 
-Differentiate with respect to \( \tilde{x} \):
+对 \( \tilde{x} \) 求梯度：
 
 \[
 \nabla_{\tilde{x}}\log q_\sigma(\tilde{x}\mid x)
@@ -200,7 +200,7 @@ Differentiate with respect to \( \tilde{x} \):
 = -\frac{\tilde{x}-x}{\sigma^2}.
 \]
 
-So the denoising score matching target is known analytically, and the loss becomes
+于是 denoising score matching 的目标可以直接写成
 
 \[
 \mathcal{L}_{\mathrm{DSM}}
@@ -223,77 +223,77 @@ s_\theta(\tilde{x},\sigma)
 \right].
 \]
 
-This is the step that makes score estimation practical for modern generative modeling.
+这一步让现代生成模型中的 score estimation 变得可操作。
 
-## Intuition / Interpretation
+## 直觉 / 理解
 
-- The score is a vector field telling us where density increases.
-- Classical score matching tries to match the clean-data vector field directly.
-- Denoising score matching first smooths the density, which makes that vector field easier to learn.
+- score 是一个向量场，告诉我们密度在哪个方向上升。
+- 经典 score matching 试图直接匹配干净数据上的这个向量场。
+- denoising score matching 先把数据模糊化，于是这个向量场会变得更容易学习。
 
-I find it helpful to think of denoising score matching as geometry estimation on blurred data manifolds.
+我更喜欢把 denoising score matching 理解成“在被模糊过的数据流形上学习几何”。
 
-## Relation To Other Methods
+## 与其他方法的关系
 
-### Relation To DDPM
+### 与 DDPM 的关系
 
-Diffusion uses the perturbation
+扩散模型里常用的扰动形式是
 
 \[
 x_t=\sqrt{\bar{\alpha}_t}x_0+\sqrt{1-\bar{\alpha}_t}\epsilon.
 \]
 
-The corresponding conditional score is
+对应的条件 score 为
 
 \[
 \nabla_{x_t}\log q(x_t\mid x_0)
 = -\frac{x_t-\sqrt{\bar{\alpha}_t}x_0}{1-\bar{\alpha}_t}.
 \]
 
-Since
+由于
 
 \[
 x_t-\sqrt{\bar{\alpha}_t}x_0=\sqrt{1-\bar{\alpha}_t}\epsilon,
 \]
 
-we obtain
+我们有
 
 \[
 \nabla_{x_t}\log q(x_t\mid x_0)
 = -\frac{\epsilon}{\sqrt{1-\bar{\alpha}_t}}.
 \]
 
-So DDPM epsilon-prediction is just score estimation with a deterministic rescaling:
+因此 DDPM 的 epsilon-prediction 其实就是经过确定性缩放后的 score estimation：
 
 \[
 s_\theta(x_t,t)
 = -\frac{\epsilon_\theta(x_t,t)}{\sqrt{1-\bar{\alpha}_t}}.
 \]
 
-This is the direct link to [DDPM Notes](./ddpm-notes.md).
+这就是它与 [DDPM 笔记](./ddpm-notes.md) 的直接联系。
 
-### Relation To Langevin Sampling
+### 与 Langevin Sampling 的关系
 
-Once we have a score estimator, we can sample with Langevin dynamics:
+一旦有了 score estimator，就可以通过 Langevin dynamics 采样：
 
 \[
 x_{k+1}=x_k+\eta s_\theta(x_k)+\sqrt{2\eta}\,z_k,
 \qquad z_k\sim\mathcal{N}(0,I).
 \]
 
-The gradient term moves toward high density and the noise term explores the space. This is the classical score-based sampling story.
+梯度项把样本推向高密度区域，噪声项则帮助探索空间。这就是经典的 score-based sampling 思路。
 
-### Relation To Flow Matching
+### 与 Flow Matching 的关系
 
-Flow matching learns a velocity field rather than a score field, but score-based diffusion models also imply a probability-flow ODE. That means a score can induce deterministic transport dynamics. This is the main conceptual bridge to [Flow Matching Notes](./flow-matching-notes.md).
+Flow matching 学习的是速度场而不是 score 场，但 score-based diffusion 模型同样会诱导出一个 probability-flow ODE。也就是说，score 场也能定义一个确定性的 transport dynamics。这正是它与 [Flow Matching 笔记](./flow-matching-notes.md) 的主要概念桥梁。
 
-## My Notes / Open Questions
+## 我的笔记 / 开放问题
 
-- The most important conceptual jump is not the Fisher divergence itself, but the denoising reformulation.
-- Score matching is a very clean "local geometry first" point of view on generative modeling.
-- A good future note would compare Langevin, reverse SDE, and probability-flow ODE sampling side by side.
+- 真正重要的概念跳跃，不只是 Fisher divergence 本身，而是去噪化之后的改写。
+- Score matching 是一种非常“先看局部几何，再谈全局生成”的思路。
+- 一个值得后续补充的方向，是把 Langevin、reverse SDE 和 probability-flow ODE sampling 并排放在一起比较。
 
-## References
+## 参考资料
 
 - [Aapo Hyvarinen (2005), *Estimation of Non-Normalized Statistical Models by Score Matching*](https://jmlr.org/papers/v6/hyvarinen05a.html)
 - [Yang Song, *Generative Modeling by Estimating Gradients of the Data Distribution*](https://yang-song.net/blog/2021/score/)

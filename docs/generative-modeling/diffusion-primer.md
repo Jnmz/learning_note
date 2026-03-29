@@ -1,6 +1,6 @@
-# Diffusion Primer
+# 扩散模型导读
 
-## Metadata
+## 元信息
 
 - Topic: generative-modeling
 - Status: evergreen
@@ -8,73 +8,73 @@
 - Source type: concept
 - Primary references:
   - Denoising Diffusion Probabilistic Models
-  - Score-based tutorials and score matching references
+  - 与 score matching 相关的教程与参考资料
   - Flow Matching for Generative Modeling
 
-## One-Sentence Takeaway
+## 一句话总结
 
-Diffusion-style models all rely on a simple idea: choose an easy-to-analyze path from data to noise, then learn the inverse dynamics that bring noise back to the data distribution.
+各种 diffusion 风格模型背后都有一个共同想法：先选一条从数据分布走向噪声分布、易于分析的路径，再学习把噪声带回数据分布的逆向动力学。
 
-## Why It Matters
+## 为什么重要
 
-This family matters because it turns hard density modeling into local prediction problems: predict noise, predict a score, or predict a velocity field. Those local objectives are often stable, scalable, and compatible with conditioning.
+这一类方法之所以重要，是因为它把困难的密度建模问题转化成局部预测问题，例如预测噪声、预测 score，或预测速度场。这样的局部目标往往更稳定、更容易扩展，也更容易加入条件控制。
 
-## Core Ideas
+## 核心思想
 
-### One Generative Family, Three Common Parameterizations
+### 一个生成家族，三种常见参数化
 
-- **DDPM view**: define a discrete Markov noising chain and learn the reverse chain.
-- **Score-based view**: learn the score \( \nabla_x \log p_t(x) \) of progressively noised data and integrate a reverse SDE or ODE.
-- **Flow-matching view**: define a probability path \( p_t \) and regress the vector field whose ODE transports noise to data.
+- **DDPM 视角**：定义离散时间的 Markov 加噪链，并学习其反向链。
+- **Score-based 视角**：学习逐渐加噪后的分布 \( \nabla_x \log p_t(x) \) 的 score，然后积分反向 SDE 或 ODE。
+- **Flow-matching 视角**：直接定义概率路径 \( p_t \)，并回归把噪声运输到数据的向量场。
 
-These are not isolated ideas. In many practical setups:
+这三种看法彼此并不孤立。在很多实际设定中：
 
-- epsilon-prediction in DDPM can be converted to a score estimate;
-- the probability-flow ODE of score-based models gives a deterministic transport view;
-- flow matching directly trains such a transport field without simulating the forward diffusion chain during optimization.
+- DDPM 中的 epsilon-prediction 可以转换成 score 估计；
+- score-based 模型中的 probability-flow ODE 给出一个确定性的 transport 视角；
+- flow matching 则直接训练这样的 transport field，而不必在优化时显式模拟前向扩散链。
 
-### Common Structure
+### 共同结构
 
-Most notes in this topic fit the same template:
+这一主题下的大多数笔记都可以套进同一个模板：
 
-1. pick a path \( p_t \) from data to a simple prior;
-2. derive a local target attached to each noisy state \( x_t \);
-3. integrate a reverse-time process or ODE at sampling time.
+1. 选取一条从数据到简单先验的路径 \( p_t \)；
+2. 对每个噪声状态 \( x_t \) 推出一个局部监督目标；
+3. 在采样时积分一个反向过程或 ODE。
 
-## Important Details
+## 重要细节
 
-### A Minimal Dictionary
+### 一个最小术语表
 
-- **Forward process**: the chosen data-to-noise path.
-- **Reverse process**: the learned dynamics that move samples from noise back to data.
-- **Score**: \( \nabla_x \log p_t(x) \), the steepest ascent direction of log density.
-- **Velocity field**: \( v_t(x) \), the instantaneous motion in an ODE \( \dot{x}_t = v_t(x_t) \).
-- **Probability path**: the family of intermediate marginals \( \{p_t\}_{t \in [0,1]} \).
+- **Forward process**：预先选定的数据到噪声路径。
+- **Reverse process**：学习到的、把样本从噪声拉回数据的动力学。
+- **Score**：\( \nabla_x \log p_t(x) \)，也就是对数密度上升最快的方向。
+- **Velocity field**：\( v_t(x) \)，对应 ODE \( \dot{x}_t = v_t(x_t) \) 中的瞬时速度。
+- **Probability path**：中间边缘分布族 \( \{p_t\}_{t \in [0,1]} \)。
 
-### Which Note To Read Next
+### 接下来先读哪篇
 
-- If you want the original discrete-time derivation, start with [DDPM Notes](./ddpm-notes.md).
-- If you want to understand why diffusion objectives are tied to scores, read [Score Matching Notes](./score-matching-notes.md).
-- If you want the modern ODE transport perspective, read [Flow Matching Notes](./flow-matching-notes.md).
+- 如果你想先看最原始的离散时间推导，从 [DDPM 笔记](./ddpm-notes.md) 开始。
+- 如果你想弄清扩散目标为什么和 score 联系在一起，读 [Score Matching 笔记](./score-matching-notes.md)。
+- 如果你想理解更现代的 ODE transport 视角，读 [Flow Matching 笔记](./flow-matching-notes.md)。
 
-### Visual Map
+### 可视化地图
 
-![Diffusion overview](./diffusion-process.svg)
+![扩散模型概览](./diffusion-process.svg)
 
-## Personal Notes
+## 我的笔记
 
-I find it useful to treat diffusion, score-based models, and flow matching as three coordinate systems on the same terrain. The algebra looks different, but the central question is the same: what local signal lets a neural network reconstruct global generation dynamics?
+我会把 diffusion、score-based model 和 flow matching 当成同一片地形上的三套坐标系来理解。它们的代数形式看起来不同，但真正想回答的问题很接近：神经网络到底该学习什么样的局部信号，才能重建全局的生成动力学？
 
-## Open Questions
+## 开放问题
 
-- Which probability paths make vector-field learning easiest?
-- When is a stochastic reverse process actually better than a deterministic ODE solver?
+- 哪些概率路径会让向量场学习最容易？
+- 在什么情况下，随机的反向过程会优于确定性的 ODE 求解？
 
-## See Also
+## 相关笔记
 
-- [Unified Models](../unified-models/index.md)
+- [统一模型](../unified-models/index.md)
 
-## References
+## 参考资料
 
 - [Ho, Jain, Abbeel (2020), *Denoising Diffusion Probabilistic Models*](https://arxiv.org/abs/2006.11239)
 - [Lilian Weng, *What are Diffusion Models?*](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/)

@@ -1,28 +1,28 @@
-# Contribution Guide
+# 贡献指南
 
-This repository is intended to stay consistent as it grows. Use the workflow below whenever you add a new note.
+这个仓库希望在不断扩展时仍然保持结构一致。每次新增笔记时，都建议按下面的流程进行。
 
-## Recommended Workflow
+## 推荐工作流
 
-1. Pick the best topic folder for the note.
-2. Copy the [note template](./workflows/note-template.md).
-3. Save the new file with a descriptive kebab-case filename.
-4. Fill in the front section first: title, scope, references, and key takeaway.
-5. Add the note to the corresponding topic index page.
-6. If the note should appear in top-level navigation, update `mkdocs.yml`.
-7. Preview locally with `mkdocs serve` before publishing.
+1. 先为笔记选择最合适的主题目录。
+2. 复制 [笔记模板](./workflows/note-template.md)。
+3. 使用清晰的 kebab-case 文件名保存新文件。
+4. 先填写前置部分：标题、主题范围、参考资料和一句话摘要。
+5. 把新笔记加入对应主题的索引页。
+6. 如果这篇笔记需要出现在顶部导航中，再更新 `mkdocs.yml`。
+7. 发布前尽量本地预览，例如使用 `mkdocs serve`。
 
-## Writing Conventions
+## 写作约定
 
-- One note should cover one paper, concept, model family, or tightly related cluster of ideas.
-- Prefer explanatory prose over raw bullet dumps.
-- Use short sections with informative headings.
-- Include citations, links, or paper identifiers when available.
-- End with open questions or follow-up directions when useful.
+- 一篇笔记最好只覆盖一篇论文、一个概念、一个模型家族，或一组紧密相关的问题。
+- 优先使用解释性文字，而不是堆砌原始要点。
+- 使用简短但信息明确的小节标题。
+- 能给出引用、链接或论文标识时尽量补上。
+- 在合适的时候以开放问题或后续方向收尾。
 
-## File Naming
+## 文件命名
 
-Use lowercase kebab-case:
+统一使用小写 kebab-case：
 
 ```text
 scaling-laws-notes.md
@@ -30,25 +30,25 @@ segment-anything-overview.md
 multimodal-tokenization.md
 ```
 
-## Topic Index Maintenance
+## 主题索引维护
 
-Each topic folder should include an `index.md` that acts as the landing page for that section. Whenever you add a note:
+每个主题目录都应包含一个作为落地页的 `index.md`。新增笔记时：
 
-- add a one-line description and link in that topic index
-- keep notes grouped logically
-- update `mkdocs.yml` when prominent navigation should change
+- 在该主题索引页中添加一行简介和链接
+- 保持笔记的组织逻辑清晰
+- 当主要导航需要变化时再更新 `mkdocs.yml`
 
-## Internal Linking
+## 站内链接
 
-- Link related notes directly using relative Markdown links.
-- Prefer stable links to topic indexes for broad navigation.
-- Add "See also" sections when concepts connect across topics.
+- 相关笔记之间优先使用相对 Markdown 链接直接互链。
+- 做宽泛导航时，优先链接到主题索引页。
+- 当概念跨主题关联时，可以添加“另见”或“相关笔记”小节。
 
-## Minimum Note Checklist
+## 最低检查清单
 
-- Clear title
-- Short summary
-- Context or motivation
-- Core ideas or mechanisms
-- References
-- Open questions, caveats, or follow-ups
+- 清晰标题
+- 简短摘要
+- 背景或动机
+- 核心思想或关键机制
+- 参考资料
+- 开放问题、注意事项或后续方向
