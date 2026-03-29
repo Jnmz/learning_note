@@ -1,6 +1,6 @@
-# Unified Multimodal Models Overview
+# 统一多模态模型总览
 
-## Metadata
+## 元信息
 
 - Topic: unified-models
 - Status: seed
@@ -9,51 +9,50 @@
 - Primary references:
   - Survey papers and model families spanning joint multimodal representation and generation
 
-## One-Sentence Takeaway
+## 一句话总结
 
-Unified multimodal models try to reduce task-specific fragmentation by representing diverse inputs and outputs inside a more shared modeling framework.
+统一多模态模型试图把多样的输入输出放进更共享的建模框架中，从而减少“每个任务一套系统”的碎片化问题。
 
-## Why It Matters
+## 为什么重要
 
-A unified setup can simplify transfer across tasks, reduce duplicated modeling components, and make multimodal reasoning look more like a general sequence modeling problem.
+统一建模有机会减少重复组件、增强跨任务迁移，并把多模态推理重新表述成更一般的序列建模问题。
 
-## Core Ideas
+## 核心思想
 
-### Shared Representation
+### 共享表征
 
-Many unified systems push different modalities into compatible token or latent spaces so one backbone can process them together.
+很多统一系统会把不同模态映射到兼容的 token 或 latent 空间中，从而让一个主干网络共同处理。
 
-### Shared Objective
+### 共享目标
 
-A common loss family, often autoregressive prediction or masked reconstruction, can create a single training interface across tasks.
+如果多种任务能被改写成同一类损失，例如自回归预测或掩码重建，那么训练接口就可以统一。
 
-### Shared Interface
+### 共享接口
 
-Prompting, instruction tuning, and general input-output formatting often matter as much as architecture when the goal is broad capability.
+当目标是获得广泛能力时，prompt 设计、instruction tuning 和统一的输入输出格式往往和架构本身一样重要。
 
-## Important Details
+## 重要细节
 
-- Architecture: often a transformer backbone with modality-specific encoders or decoders
-- Objective: autoregressive, denoising, contrastive, or mixed multitask losses
-- Data: mixed text, image, video, and instruction datasets
-- Evaluation: transfer breadth, multimodal reasoning, and generation quality
-- Strengths: reuse, transfer, and simpler system framing
-- Limitations: optimization interference, token imbalance, and evaluation ambiguity
+- Architecture: 常见形式是 transformer 主干配合模态专属 encoder / decoder
+- Objective: 自回归、去噪、对比学习或混合多任务损失
+- Data: 混合文本、图像、视频和指令数据
+- Evaluation: 迁移广度、多模态推理能力与生成质量
+- Strengths: 复用性强、便于迁移、系统叙事更统一
+- Limitations: 优化干扰、token 不平衡、评测口径模糊
 
-## Personal Notes
+## 我的笔记
 
-This is a good umbrella topic page to split into narrower notes once the repository grows.
+这一页适合作为总览入口，后续随着仓库扩展，再不断拆成更细的模型或方法笔记。
 
-## Open Questions
+## 开放问题
 
-- When does unification improve generalization versus simply increasing optimization difficulty?
-- Which interface choices matter more than backbone choices?
+- 统一到底是在提升泛化，还是只是增加了优化难度？
+- 相比主干网络本身，哪些接口设计选择更决定最终效果？
 
-## See Also
+## 相关笔记
 
 - [VLM Reading Map](../vlm/vlm-reading-map.md)
 
-## References
+## 参考资料
 
-- Add targeted model or survey references here as this section expands.
-
+- 随着这一部分扩展，可以继续补充更具体的模型论文或综述。

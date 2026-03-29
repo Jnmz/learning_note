@@ -1,6 +1,6 @@
-# DDPM Notes
+# DDPM 笔记
 
-## Metadata
+## 元信息
 
 - Topic: generative-modeling
 - Status: evergreen
@@ -8,79 +8,79 @@
 - Source type: derivation note
 - Primary references:
   - Denoising Diffusion Probabilistic Models
-  - Lilian Weng's diffusion overview
-  - user-supplied Zhihu notes
+  - Lilian Weng 的 diffusion 总览
+  - 用户提供的知乎笔记
 
-## One-Sentence Takeaway
+## 一句话总结
 
-DDPM defines a discrete Gaussian noising chain and learns its reverse, and the familiar epsilon-prediction loss is a reparameterized form of a variational objective built from Gaussian posterior matching.
+DDPM 定义了一条离散的高斯加噪链并学习它的反向过程，而常见的 epsilon-prediction loss，本质上是由高斯后验匹配出发、经过重参数化后得到的变分目标。
 
-## Background / Problem Setup
+## 背景 / 问题设定
 
-We want to model samples \( x_0 \sim q(x_0) \). DDPM does not try to learn \( q(x_0) \) in one step. Instead, it introduces a latent chain
+我们想建模样本 \( x_0 \sim q(x_0) \)。DDPM 并不试图一步直接学习 \( q(x_0) \)，而是引入一条潜变量链
 
 \[
 x_0 \to x_1 \to \cdots \to x_T
 \]
 
-where the forward process gradually corrupts data into noise and the reverse process learns to undo this corruption.
+其中前向过程逐步把数据腐蚀成噪声，反向过程再学习如何把噪声还原回数据。
 
-The overall strategy is:
+整体策略可以概括为：
 
-1. choose a simple forward Gaussian Markov chain;
-2. write a reverse model with learnable Gaussian transitions;
-3. optimize a variational lower bound;
-4. reparameterize the trainable part as a noise-prediction problem.
+1. 先选一条简单的前向高斯 Markov 链；
+2. 再写一个带可学习参数的反向高斯链；
+3. 用变分下界进行优化；
+4. 最后把可训练部分重写成噪声预测问题。
 
-## Notation
+## 记号
 
-- \( x_0 \): clean data sample.
-- \( x_t \): latent variable at diffusion step \( t \in \{1,\dots,T\} \).
-- \( q(x_t\mid x_{t-1}) \): forward noising kernel.
-- \( p_\theta(x_{t-1}\mid x_t) \): learned reverse kernel.
-- \( \beta_t \in (0,1) \): variance schedule.
-- \( \alpha_t = 1-\beta_t \).
-- \( \bar{\alpha}_t = \prod_{s=1}^t \alpha_s \).
-- \( \epsilon,\epsilon_t \sim \mathcal{N}(0,I) \): Gaussian noise variables.
-- \( \mu_\theta(x_t,t) \): reverse mean.
-- \( \Sigma_\theta(x_t,t) \): reverse covariance.
+- \( x_0 \)：干净数据样本。
+- \( x_t \)：扩散步骤 \( t \in \{1,\dots,T\} \) 上的潜变量。
+- \( q(x_t\mid x_{t-1}) \)：前向加噪核。
+- \( p_\theta(x_{t-1}\mid x_t) \)：学习得到的反向核。
+- \( \beta_t \in (0,1) \)：方差日程。
+- \( \alpha_t = 1-\beta_t \)。
+- \( \bar{\alpha}_t = \prod_{s=1}^t \alpha_s \)。
+- \( \epsilon,\epsilon_t \sim \mathcal{N}(0,I) \)：高斯噪声。
+- \( \mu_\theta(x_t,t) \)：反向均值。
+- \( \Sigma_\theta(x_t,t) \)：反向协方差。
 
-## Core Idea
+## 核心思想
 
-The forward chain is chosen as
+前向链被设定为
 
 \[
 q(x_t\mid x_{t-1})
 = \mathcal{N}\bigl(x_t;\sqrt{\alpha_t}x_{t-1},(1-\alpha_t)I\bigr).
 \]
 
-Each step keeps a scaled version of the previous state and injects Gaussian noise. After many steps, \( x_T \) becomes close to standard Gaussian. The reverse model then uses
+每一步都保留上一状态的缩放版本，同时注入高斯噪声。经过很多步以后，\( x_T \) 会接近标准高斯。反向模型再使用
 
 \[
 p_\theta(x_{t-1}\mid x_t)
 = \mathcal{N}\bigl(x_{t-1};\mu_\theta(x_t,t),\Sigma_\theta(x_t,t)\bigr)
 \]
 
-to reconstruct data from noise.
+把噪声逐步还原成数据。
 
-The central derivation is:
+核心推导路线是：
 
-- first derive the direct forward marginal \( q(x_t\mid x_0) \);
-- then derive the forward posterior \( q(x_{t-1}\mid x_t,x_0) \);
-- finally show why the ELBO reduces to epsilon prediction.
+- 先推出直接的前向边缘分布 \( q(x_t\mid x_0) \)；
+- 再推出前向后验 \( q(x_{t-1}\mid x_t,x_0) \)；
+- 最后说明为什么 ELBO 会化成 epsilon prediction。
 
-## Detailed Derivation
+## 详细推导
 
-### Derivation Block 1: Closed Form Of \( q(x_t \mid x_0) \)
+### 推导块 1：\( q(x_t \mid x_0) \) 的闭式表达
 
-Start from the forward reparameterization
+从前向重参数化开始：
 
 \[
 x_t = \sqrt{\alpha_t}x_{t-1} + \sqrt{1-\alpha_t}\,\epsilon_t,
 \qquad \epsilon_t\sim\mathcal{N}(0,I).
 \]
 
-Expand one step:
+展开一步：
 
 \[
 \begin{aligned}
@@ -93,7 +93,7 @@ x_t
 \end{aligned}
 \]
 
-Continuing recursively gives
+继续递归展开可得
 
 \[
 x_t
@@ -104,13 +104,13 @@ x_t
 \right)\epsilon_s.
 \]
 
-This is a linear combination of independent Gaussian variables, so conditional on \( x_0 \), it is Gaussian. Its mean is
+因为这是若干独立高斯变量的线性组合，所以在给定 \( x_0 \) 时它仍然是高斯分布。其均值为
 
 \[
 \mathbb{E}[x_t\mid x_0]=\sqrt{\bar{\alpha}_t}x_0.
 \]
 
-Its covariance is
+其协方差为
 
 \[
 \operatorname{Var}(x_t\mid x_0)
@@ -120,7 +120,7 @@ Its covariance is
 \right)I.
 \]
 
-Now use the telescoping identity
+现在使用 telescoping identity
 
 \[
 \sum_{s=1}^t
@@ -131,25 +131,25 @@ Now use the telescoping identity
 = 1-\bar{\alpha}_t.
 \]
 
-Therefore
+因此
 
 \[
 q(x_t\mid x_0)
 = \mathcal{N}\bigl(x_t;\sqrt{\bar{\alpha}_t}x_0,(1-\bar{\alpha}_t)I\bigr).
 \]
 
-Equivalently, by Gaussian reparameterization,
+等价地，根据高斯重参数化，
 
 \[
 x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon,
 \qquad \epsilon\sim\mathcal{N}(0,I).
 \]
 
-This formula is crucial because it lets us sample \( x_t \) from \( x_0 \) in one shot.
+这个公式非常关键，因为它允许我们从 \( x_0 \) 一步直接采样 \( x_t \)。
 
-### Derivation Block 2: Posterior \( q(x_{t-1}\mid x_t,x_0) \)
+### 推导块 2：后验 \( q(x_{t-1}\mid x_t,x_0) \)
 
-We now derive the exact reverse conditional of the forward chain. By Bayes' rule and the Markov property,
+现在来推导前向链的精确反向条件分布。利用 Bayes 公式和 Markov 性：
 
 \[
 q(x_{t-1}\mid x_t,x_0)
@@ -157,7 +157,7 @@ q(x_{t-1}\mid x_t,x_0)
 q(x_t\mid x_{t-1})\,q(x_{t-1}\mid x_0).
 \]
 
-The two Gaussian factors are
+两个高斯因子分别是
 
 \[
 q(x_t\mid x_{t-1})
@@ -176,7 +176,7 @@ q(x_{t-1}\mid x_0)
 \right).
 \]
 
-Expand the quadratic terms in \( x_{t-1} \):
+把关于 \( x_{t-1} \) 的二次项展开：
 
 \[
 \|x_t-\sqrt{\alpha_t}x_{t-1}\|^2
@@ -189,7 +189,7 @@ Expand the quadratic terms in \( x_{t-1} \):
 + \bar{\alpha}_{t-1}\|x_0\|^2.
 \]
 
-Keeping only terms that depend on \( x_{t-1} \), the log density is
+只保留依赖 \( x_{t-1} \) 的项，得到对数密度
 
 \[
 \log q(x_{t-1}\mid x_t,x_0)
@@ -210,7 +210,7 @@ Keeping only terms that depend on \( x_{t-1} \), the log density is
 + C.
 \]
 
-Now simplify the quadratic coefficient using \( \bar{\alpha}_t=\alpha_t\bar{\alpha}_{t-1} \) and \( 1-\alpha_t=\beta_t \):
+再利用 \( \bar{\alpha}_t=\alpha_t\bar{\alpha}_{t-1} \) 与 \( 1-\alpha_t=\beta_t \) 来化简二次项系数：
 
 \[
 \frac{\alpha_t}{1-\alpha_t}
@@ -218,14 +218,14 @@ Now simplify the quadratic coefficient using \( \bar{\alpha}_t=\alpha_t\bar{\alp
 = \frac{1-\bar{\alpha}_t}{\beta_t(1-\bar{\alpha}_{t-1})}.
 \]
 
-Completing the square gives
+配方后可得
 
 \[
 q(x_{t-1}\mid x_t,x_0)
 = \mathcal{N}\bigl(x_{t-1};\tilde{\mu}_t(x_t,x_0),\tilde{\beta}_t I\bigr),
 \]
 
-where
+其中
 
 \[
 \tilde{\beta}_t
@@ -238,11 +238,11 @@ where
 + \frac{\sqrt{\alpha_t}(1-\bar{\alpha}_{t-1})}{1-\bar{\alpha}_t}x_t.
 \]
 
-So the reverse model only needs to approximate a known Gaussian posterior mean and variance.
+所以反向模型真正需要逼近的，其实就是一个已知高斯后验的均值和方差。
 
-### Derivation Block 3: From ELBO To Epsilon Prediction
+### 推导块 3：从 ELBO 到 epsilon prediction
 
-The reverse generative model is
+反向生成模型写成
 
 \[
 p_\theta(x_{0:T})
@@ -250,7 +250,7 @@ p_\theta(x_{0:T})
 \qquad p(x_T)=\mathcal{N}(0,I).
 \]
 
-Using \( q(x_{1:T}\mid x_0) \) as a variational distribution and Jensen's inequality,
+把 \( q(x_{1:T}\mid x_0) \) 当作变分分布，并使用 Jensen 不等式：
 
 \[
 \log p_\theta(x_0)
@@ -262,7 +262,7 @@ Using \( q(x_{1:T}\mid x_0) \) as a variational distribution and Jensen's inequa
 \right].
 \]
 
-Expanding numerator and denominator yields
+把分子分母展开：
 
 \[
 \mathcal{L}_{\mathrm{vlb}}
@@ -273,7 +273,7 @@ Expanding numerator and denominator yields
 \right].
 \]
 
-Rearranging terms by conditional distributions gives
+整理成条件分布形式：
 
 \[
 \mathcal{L}_{\mathrm{vlb}}
@@ -284,7 +284,7 @@ D_{\mathrm{KL}}(q(x_T\mid x_0)\,\|\,p(x_T))
 \Bigr].
 \]
 
-If the reverse variance is fixed, each KL term reduces to a weighted mean-squared error:
+如果反向方差固定，那么每一项 KL 都会化成加权的均方误差：
 
 \[
 \mathcal{L}_t
@@ -294,13 +294,13 @@ If the reverse variance is fixed, each KL term reduces to a weighted mean-square
 \right].
 \]
 
-Now use the direct forward marginal
+现在利用直接前向边缘分布
 
 \[
 x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon
 \]
 
-to solve for \( x_0 \):
+解出 \( x_0 \)：
 
 \[
 x_0
@@ -310,7 +310,7 @@ x_t-\sqrt{1-\bar{\alpha}_t}\epsilon
 \right).
 \]
 
-Substitute this into \( \tilde{\mu}_t(x_t,x_0) \):
+把它代入 \( \tilde{\mu}_t(x_t,x_0) \)：
 
 \[
 \begin{aligned}
@@ -330,7 +330,7 @@ x_t-\sqrt{1-\bar{\alpha}_t}\epsilon
 \end{aligned}
 \]
 
-Combine the \( x_t \) coefficients:
+合并 \( x_t \) 的系数：
 
 \[
 \frac{\beta_t}{\sqrt{\alpha_t}(1-\bar{\alpha}_t)}
@@ -338,7 +338,7 @@ Combine the \( x_t \) coefficients:
 = \frac{1}{\sqrt{\alpha_t}}.
 \]
 
-Therefore
+因此
 
 \[
 \tilde{\mu}_t(x_t,x_0)
@@ -348,7 +348,7 @@ x_t-\frac{\beta_t}{\sqrt{1-\bar{\alpha}_t}}\epsilon
 \right).
 \]
 
-If the network predicts \( \epsilon_\theta(x_t,t) \), define
+如果网络预测 \( \epsilon_\theta(x_t,t) \)，定义
 
 \[
 \mu_\theta(x_t,t)
@@ -358,7 +358,7 @@ x_t-\frac{\beta_t}{\sqrt{1-\bar{\alpha}_t}}\epsilon_\theta(x_t,t)
 \right).
 \]
 
-Then the trainable loss becomes, up to a time-dependent weight,
+那么可训练目标就会变成一个只差时间权重的噪声回归：
 
 \[
 \mathcal{L}_{\mathrm{simple}}
@@ -368,59 +368,59 @@ Then the trainable loss becomes, up to a time-dependent weight,
 \right].
 \]
 
-This is why DDPM is usually implemented as a noise-prediction model even though it started from an ELBO.
+这就是为什么 DDPM 通常被实现成噪声预测模型，尽管它最初是从一个 ELBO 出发推出来的。
 
-## Intuition / Interpretation
+## 直觉 / 理解
 
-- The forward chain manufactures many supervised denoising tasks from unlabeled data.
-- The reverse posterior says what the ideal denoiser should do if it had access to \( x_0 \).
-- Epsilon-prediction works because \( x_0 \) and \( \epsilon \) are interchangeable once \( x_t \) and \( t \) are known.
+- 前向链把无标签数据制造成大量监督式去噪任务。
+- 反向后验告诉我们，如果知道 \( x_0 \)，理想的去噪器应该做什么。
+- 一旦 \( x_t \) 和 \( t \) 已知，\( x_0 \) 与 \( \epsilon \) 其实是可以互相换写的，所以 epsilon-prediction 就成立。
 
-I find DDPM easiest to understand as "a Gaussian latent-variable model with a very carefully chosen auxiliary chain."
+我觉得理解 DDPM 最舒服的方式，是把它看成“一个经过精心设计的高斯潜变量模型”。
 
-## Relation To Other Methods
+## 与其他方法的关系
 
-### Relation To Score Matching
+### 与 Score Matching 的关系
 
-Since
+由于
 
 \[
 x_t\mid x_0 \sim \mathcal{N}\bigl(\sqrt{\bar{\alpha}_t}x_0,(1-\bar{\alpha}_t)I\bigr),
 \]
 
-the score of the conditional kernel is
+条件核的 score 为
 
 \[
 \nabla_{x_t}\log q(x_t\mid x_0)
 = -\frac{x_t-\sqrt{\bar{\alpha}_t}x_0}{1-\bar{\alpha}_t}.
 \]
 
-Using \( x_t-\sqrt{\bar{\alpha}_t}x_0=\sqrt{1-\bar{\alpha}_t}\epsilon \), we get
+再利用 \( x_t-\sqrt{\bar{\alpha}_t}x_0=\sqrt{1-\bar{\alpha}_t}\epsilon \)，可得
 
 \[
 \nabla_{x_t}\log q(x_t\mid x_0)
 = -\frac{\epsilon}{\sqrt{1-\bar{\alpha}_t}}.
 \]
 
-So predicting \( \epsilon \) is equivalent to predicting a scaled score. This is the precise bridge to [Score Matching Notes](./score-matching-notes.md).
+因此预测 \( \epsilon \) 等价于预测一个缩放后的 score。这就是它与 [Score Matching 笔记](./score-matching-notes.md) 之间最精确的桥梁。
 
-### Relation To Flow Matching
+### 与 Flow Matching 的关系
 
-DDPM is a discrete stochastic model; flow matching is a continuous transport model. But both fit the same high-level pattern:
+DDPM 是离散的随机生成模型；flow matching 是连续的 transport 模型。但两者在高层结构上非常相似：
 
-- choose a path from data to noise;
-- define a local supervision signal along the path;
-- integrate learned reverse dynamics at sampling time.
+- 先选一条从数据到噪声的路径；
+- 再在路径上定义局部监督信号；
+- 最后在采样时积分学习到的反向动力学。
 
-In DDPM the local signal is noise or posterior mean. In flow matching it is velocity. See [Flow Matching Notes](./flow-matching-notes.md).
+DDPM 中的局部信号是噪声或后验均值，flow matching 中的局部信号是速度。可以继续看 [Flow Matching 笔记](./flow-matching-notes.md)。
 
-## My Notes / Open Questions
+## 我的笔记 / 开放问题
 
-- The cleanest conceptual move in DDPM is not the network design but the Gaussian algebra behind the forward posterior.
-- The ELBO story explains the original method well, but many practical improvements later prioritize better parameterizations over the exact bound.
-- A natural follow-up note would compare DDPM, DDIM, and probability-flow ODE sampling in one place.
+- DDPM 最漂亮的部分不是网络结构，而是前向后验里的那套高斯代数。
+- ELBO 解释了原始方法的来龙去脉，但很多后续改进更关心更好的参数化方式，而不执着于原始下界本身。
+- 一个自然的后续笔记方向，是把 DDPM、DDIM 和 probability-flow ODE sampling 放在同一页里对比。
 
-## References
+## 参考资料
 
 - [Ho, Jain, Abbeel (2020), *Denoising Diffusion Probabilistic Models*](https://arxiv.org/abs/2006.11239)
 - [Lilian Weng, *What are Diffusion Models?*](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/)

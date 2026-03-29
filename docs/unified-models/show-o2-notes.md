@@ -1,6 +1,6 @@
-# Show-o2 Notes
+# Show-o2 笔记
 
-## Metadata
+## 元信息
 
 - Topic: unified-models
 - Status: revised
@@ -10,11 +10,11 @@
   - Show-o2: Improved Native Unified Multimodal Models
   - Show-o official repository and model cards
 
-## One-Sentence Takeaway
+## 一句话总结
 
 Show-o2 可以看成是对 Show-o 的一次“原生升级”：它不再把视觉统一建立在离散图像 token 上，而是把图像和视频统一到 3D causal VAE latent space，再用 language head 做文本自回归、用 flow head 做视觉 flow matching。
 
-## Background / Problem Setup
+## 背景 / 问题设定
 
 Show-o 已经证明了一个 transformer 主干可以同时覆盖理解和生成，但它还留着几个明显问题：
 
@@ -30,7 +30,7 @@ Show-o2 的核心判断是：
 
 因此 Show-o2 的升级不是“小修小补”，而是把视觉侧从 discrete diffusion 迁移到了 latent flow matching，并把统一范围扩展到了 text-image-video。
 
-## Notation
+## 记号
 
 设：
 
@@ -43,9 +43,9 @@ Show-o2 的核心判断是：
 - 语言头输出的文本条件分布为 \(p_\theta(\cdot)\)
 - flow head 预测的速度场为 \(v_\theta(\cdot, t)\)
 
-## Core Idea
+## 核心思想
 
-### 1. Move From Discrete Image Tokens To 3D Causal VAE Latents
+### 1. 从离散图像 token 迁移到 3D causal VAE latent
 
 Show-o2 直接在 3D causal VAE 空间里处理视觉信号。这样做的好处有两个：
 
@@ -54,7 +54,7 @@ Show-o2 直接在 3D causal VAE 空间里处理视觉信号。这样做的好处
 
 这里的“3D”不是指 3D 场景，而是指 latent 结构显式保留时间维，因此同一套编码器既能表示单帧图像，也能表示视频片段。
 
-### 2. Dual-Path Visual Representation
+### 2. 双路径视觉表示
 
 论文认为理解与生成对视觉特征的偏好不同：
 
@@ -68,7 +68,7 @@ Show-o2 直接在 3D causal VAE 空间里处理视觉信号。这样做的好处
 
 然后通过 spatial / temporal fusion 把两路特征合成统一视觉表示。
 
-### 3. Two Heads, Two Dynamics
+### 3. 两个输出头，两种动力学
 
 统一仍然发生在同一个 language model 主干里，但输出机制被明确拆开：
 
@@ -77,7 +77,7 @@ Show-o2 直接在 3D causal VAE 空间里处理视觉信号。这样做的好处
 
 这意味着 Show-o2 的“统一”比 Show-o 更彻底也更模块化：主干统一，输出动力学不统一。
 
-## A Simple Diagram
+## 一个简单示意图
 
 ```text
 text ----------> text embeddings -----------------------------+
@@ -89,9 +89,9 @@ image/video -> 3D causal VAE latents -> dual-path fusion ----+--> shared LM back
                                                                      +--> flow head -> latent flow matching
 ```
 
-## Detailed Derivation
+## 详细推导
 
-### Derivation 1: Unified Visual Representation Is A Fusion Of Two Complementary Views
+### 推导 1：统一视觉表示是两种互补视角的融合
 
 Show-o2 的第一步不是直接把视觉 latent 扔给 LLM，而是先构造 unified visual representation。设输入图像或视频经 3D causal VAE 后得到 latent \(z\)，在噪声时刻 \(t\) 上得到 \(z_t\)。
 
@@ -140,7 +140,7 @@ u = \operatorname{STF}\big([h_{\text{sem}} ; h_{\text{low}}]\big),
 
 这也是它相对 Show-o 最重要的方法升级之一，因为 Show-o 默认更依赖单一视觉离散表示。
 
-### Derivation 2: Text Objective Still Follows Autoregressive Factorization
+### 推导 2：文本目标依然遵循自回归分解
 
 虽然 Show-o2 大改了视觉侧，但文本侧依然保持 LLM 的标准形式。若输出文本 token 为 \(y = (y_1,\dots,y_T)\)，条件是文本前缀与统一视觉表示 \(u\)，则：
 
@@ -160,7 +160,7 @@ p_\theta(y \mid u)
 
 从架构角度看，这也解释了为什么它不直接把所有输出都改成 diffusion 或 flow：文本序列天然有顺序结构，而 AR factorization 已经是非常成熟的解。
 
-### Derivation 3: Flow Matching Replaces Discrete Denoising On The Visual Side
+### 推导 3：视觉侧用 flow matching 取代离散去噪
 
 论文将视觉生成交给 flow head，并明确说使用 flow matching 预测 velocity。论文正文没有把所有中间公式完全展开，因此下面用标准 flow matching 记号解释其含义。
 
@@ -193,7 +193,7 @@ x_t = (1-t)x_0 + t x_1, \qquad t \in [0,1].
 
 因此 Show-o2 的视觉生成建模从“分类式去噪”变成了“向量场回归”。这通常更适合高保真视觉生成，也更容易向视频推广，因为视频 latent 天然位于连续空间里。
 
-### Derivation 4: The Native Unified Loss Is A Sum Of Language And Flow Terms
+### 推导 4：原生统一损失是语言项与 flow 项之和
 
 把上面两部分合起来，Show-o2 的原生统一训练可以概括成
 
@@ -222,9 +222,9 @@ x_t = (1-t)x_0 + t x_1, \qquad t \in [0,1].
 
 这实际上比 Show-o 更像真正的 native unified model，因为视觉生成不再借助离散 token reconstruction 的中介，而是直接在 latent dynamics 上建模。
 
-## Training Recipe
+## 训练配方
 
-### Stage 1: Pretrain The Visual Side Without Destroying Language Knowledge
+### 阶段 1：在不破坏语言知识的前提下预训练视觉侧
 
 论文特别强调，基础 LLM 自带语言知识，但不自带视觉生成能力。因此第一阶段只训练：
 
@@ -234,11 +234,11 @@ x_t = (1-t)x_0 + t x_1, \qquad t \in [0,1].
 
 而不是一开始就全模型一起更新。这样做的目的很明确：先把视觉生成能力“接”到主干上，同时尽量不破坏已有语言参数。
 
-### Stage 2: Full-Model Unified Fine-Tuning
+### 阶段 2：全模型统一微调
 
 第二阶段再用高质量多模态理解数据与视觉生成数据联合微调全模型，让共享主干真正完成任务级统一。
 
-### Why This Two-Stage Schedule Matters
+### 为什么两阶段训练很重要
 
 如果一开始就让整个 LLM 为视觉生成大幅更新，而又没有同规模高质量文本语料去对冲，那么语言知识很容易退化。Show-o2 的两阶段训练，本质上是在做一个参数更新隔离：
 
@@ -247,7 +247,7 @@ x_t = (1-t)x_0 + t x_1, \qquad t \in [0,1].
 
 这比 Show-o 的三阶段离散 token 训练更像“保住 LLM，外挂连续视觉生成能力，再回到统一微调”。
 
-## Intuition / Interpretation
+## 直觉 / 理解
 
 我对 Show-o2 的理解是：它把“统一模型”从接口统一推进到了动力学统一。
 
@@ -261,17 +261,17 @@ Show-o2 则进一步把视觉侧换成更接近现代生成模型主流范式的
 
 另一个很有意思的点是 dual-path 表示。它其实承认了一个常被忽视的现实：用于“看懂”的视觉特征和用于“生成好”的视觉特征并不完全相同。Show-o2 不是回避这个冲突，而是显式用两条路径去吸收它。
 
-## Relation to Other Methods
+## 与其他方法的关系
 
-### Versus Show-o
+### 对比 Show-o
 
 Show-o 是离散图像 token + mask prediction；Show-o2 是 3D causal VAE latent + flow matching。后者更容易扩展到高保真图像与视频。
 
-### Versus Pure MLLMs
+### 对比纯 MLLM
 
 纯 MLLM 通常只做理解，不具备强原生生成能力。Show-o2 的 ambition 更大，它要把理解、图像生成、视频生成、混合模态生成都放进一个主干里。
 
-### Versus Transfusion / Emu3 / Chameleon
+### 对比 Transfusion / Emu3 / Chameleon
 
 这些工作也都在探索 unified modeling，但 Show-o2 的独特点在于：
 
@@ -279,7 +279,7 @@ Show-o 是离散图像 token + mask prediction；Show-o2 是 3D causal VAE laten
 - 用 dual-path 表示处理理解与生成的特征冲突
 - 用 flow head 与两阶段训练，保护 LLM 的语言能力
 
-## Important Details
+## 重要细节
 
 - Architecture: 预训练 Qwen2.5 系列 LLM + language head + flow head + dual-path visual encoder side
 - Objective: 文本 next-token prediction + 视觉 latent flow matching
@@ -288,26 +288,26 @@ Show-o 是离散图像 token + mask prediction；Show-o2 是 3D causal VAE laten
 - Strengths: 原生覆盖 text/image/video；视觉生成范式更现代；通过两阶段训练尽量保语言能力
 - Limitations: 工程复杂度明显提高；对 3D causal VAE 和蒸馏语义层依赖更强；统一训练稳定性仍然是核心挑战
 
-## My Notes / Open Questions
+## 我的笔记 / 开放问题
 
-### My Notes
+### 我的笔记
 
 我觉得 Show-o2 比 Show-o 更像一个“研究方向宣言”。它在说，未来统一模型未必应该继续把所有视觉内容硬离散化，而可以把 LLM 当成跨模态 reasoning core，把连续视觉动力学当成并列的一等公民。
 
 另一个值得注意的点是，它其实把视频也纳入了统一叙事。虽然今天很多 unified 模型还主要停留在图文层面，但 Show-o2 已经在架构层面为视频留好了位置。
 
-### Open Questions
+### 开放问题
 
 - dual-path fusion 的收益主要来自语义路径，还是主要来自低层保真路径？
 - flow head 和共享主干之间是否会在大规模联合训练下产生更强的梯度冲突？
 - 若不依赖 3D causal VAE，而改用更强的视频 tokenizer 或更强视觉 latent，效果会不会继续提升？
 
-## See Also
+## 相关笔记
 
-- [Unified Multimodal Models Overview](./unified-multimodal-models-overview.md)
-- [Show-o Notes](./show-o-notes.md)
+- [统一多模态模型总览](./unified-multimodal-models-overview.md)
+- [Show-o 笔记](./show-o-notes.md)
 
-## References
+## 参考资料
 
 - Xie et al., "Show-o2: Improved Native Unified Multimodal Models", arXiv, 2025. https://arxiv.org/abs/2506.15564
 - Official repository. https://github.com/showlab/Show-o

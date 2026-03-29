@@ -1,6 +1,6 @@
-# VAE And ELBO Notes
+# VAE 与 ELBO 笔记
 
-## Metadata
+## 元信息
 
 - Topic: generative-modeling
 - Status: evergreen
@@ -8,82 +8,82 @@
 - Source type: derivation note
 - Primary references:
   - Auto-Encoding Variational Bayes
-  - introductory latent-variable modeling resources
+  - 潜变量建模相关入门资料
 
-## One-Sentence Takeaway
+## 一句话总结
 
-VAE replaces the intractable posterior in latent-variable maximum likelihood with an amortized variational approximation, and ELBO is exactly the lower bound that turns this approximation into a trainable objective with a reconstruction term and a KL regularizer.
+VAE 用 amortized variational approximation 去替代潜变量最大似然中的不可解后验，而 ELBO 正是把这种近似变成可训练目标的那个下界，它由重建项和 KL 正则项共同组成。
 
-## Background / Problem Setup
+## 背景 / 问题设定
 
-Suppose we want to model a data distribution \( p_{\text{data}}(x) \) by introducing a latent variable \( z \). The generative model is
+设我们想通过引入潜变量 \( z \) 来建模数据分布 \( p_{\text{data}}(x) \)。生成模型写成
 
 \[
 p_\theta(x,z)=p(z)p_\theta(x\mid z),
 \]
 
-where:
+其中：
 
-- \( p(z) \) is a simple prior, often \( \mathcal{N}(0,I) \);
-- \( p_\theta(x\mid z) \) is the decoder;
-- the marginal likelihood is
+- \( p(z) \) 是一个简单先验，通常取 \( \mathcal{N}(0,I) \)；
+- \( p_\theta(x\mid z) \) 是 decoder；
+- 边缘似然为
 
 \[
 p_\theta(x)=\int p_\theta(x,z)\,dz = \int p(z)p_\theta(x\mid z)\,dz.
 \]
 
-The core difficulty is that this integral is usually intractable, and the exact posterior
+核心困难在于，这个积分通常不可解，而精确后验
 
 \[
 p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}
 \]
 
-is also intractable because it depends on the same normalizing quantity \( p_\theta(x) \).
+同样不可解，因为它也依赖归一化量 \( p_\theta(x) \)。
 
-VAE solves this by introducing an approximate posterior \( q_\phi(z\mid x) \), usually called the encoder, and optimizing a lower bound on \( \log p_\theta(x) \).
+VAE 的做法是引入一个近似后验 \( q_\phi(z\mid x) \)，通常也叫 encoder，然后去优化 \( \log p_\theta(x) \) 的一个下界。
 
-## Notation
+## 记号
 
-- \( x \): observed data point.
-- \( z \): latent variable.
-- \( p(z) \): prior over latent variables.
-- \( p_\theta(x\mid z) \): decoder or generative conditional.
-- \( p_\theta(x,z)=p(z)p_\theta(x\mid z) \): joint distribution.
-- \( p_\theta(z\mid x) \): true posterior.
-- \( q_\phi(z\mid x) \): variational posterior / encoder.
-- \( \theta \): decoder parameters.
-- \( \phi \): encoder parameters.
-- \( \mathcal{L}(x;\theta,\phi) \): ELBO for one sample.
-- \( D_{\mathrm{KL}}(q\|p) \): KL divergence.
+- \( x \)：观测数据。
+- \( z \)：潜变量。
+- \( p(z) \)：潜变量先验。
+- \( p_\theta(x\mid z) \)：decoder / 生成条件分布。
+- \( p_\theta(x,z)=p(z)p_\theta(x\mid z) \)：联合分布。
+- \( p_\theta(z\mid x) \)：真实后验。
+- \( q_\phi(z\mid x) \)：变分后验 / encoder。
+- \( \theta \)：decoder 参数。
+- \( \phi \)：encoder 参数。
+- \( \mathcal{L}(x;\theta,\phi) \)：单个样本的 ELBO。
+- \( D_{\mathrm{KL}}(q\|p) \)：KL 散度。
 
-## Core Idea
+## 核心思想
 
-The VAE story has three tightly connected steps:
+VAE 的故事由三个紧密相连的步骤组成：
 
-1. write \( \log p_\theta(x) \) in a form involving \( q_\phi(z\mid x) \);
-2. derive a lower bound whose gap is the KL divergence to the true posterior;
-3. choose Gaussian \( q_\phi(z\mid x) \) and use reparameterization so gradients can pass through latent sampling.
+1. 把 \( \log p_\theta(x) \) 改写成一个包含 \( q_\phi(z\mid x) \) 的形式；
+2. 推导出一个下界，并说明这个下界与真实对数似然之间的差距正好是真实后验上的 KL；
+3. 选取高斯形式的 \( q_\phi(z\mid x) \)，再用重参数化让梯度可以穿过潜变量采样过程。
 
-This turns latent-variable modeling into a jointly trainable encoder-decoder problem.
+这样一来，潜变量模型就变成了一个可以端到端联合训练的 encoder-decoder 系统。
 
-## Detailed Derivation
+## 详细推导
 
-### Derivation Block 1: From Log Likelihood To ELBO
+### 推导块 1：从对数似然到 ELBO
 
-We start from the marginal log likelihood:
+从边缘对数似然开始：
 
 \[
 \log p_\theta(x)=\log \int p_\theta(x,z)\,dz.
 \]
 
-Introduce the variational posterior \( q_\phi(z\mid x) \). Since it is a density over \( z \), we can multiply and divide inside the integral:
+引入变分后验 \( q_\phi(z\mid x) \)。因为它是 \( z \) 上的一个密度，可以在积分中乘除同一个量：
 
 \[
 \log p_\theta(x)
 = \log \int q_\phi(z\mid x)\frac{p_\theta(x,z)}{q_\phi(z\mid x)}\,dz.
 \]
 
-Now interpret the integral as an expectation under \( q_\phi(z\mid x) \):
+把积分看作在 \( q_\phi(z\mid x) \) 下的期望：
 
 \[
 \log p_\theta(x)
@@ -93,13 +93,13 @@ Now interpret the integral as an expectation under \( q_\phi(z\mid x) \):
 \right].
 \]
 
-Apply Jensen's inequality. Since \( \log \) is concave,
+现在使用 Jensen 不等式。因为 \( \log \) 是凹函数，
 
 \[
 \log \mathbb{E}[Y] \ge \mathbb{E}[\log Y].
 \]
 
-Therefore,
+于是
 
 \[
 \log p_\theta(x)
@@ -110,7 +110,7 @@ Therefore,
 \right].
 \]
 
-Define the right-hand side as the evidence lower bound:
+把右边定义为 evidence lower bound：
 
 \[
 \mathcal{L}(x;\theta,\phi)
@@ -121,29 +121,29 @@ Define the right-hand side as the evidence lower bound:
 \right].
 \]
 
-This is the first key derivation: ELBO is not an ad hoc loss. It is a direct Jensen lower bound on the marginal log likelihood.
+这是第一个关键推导：ELBO 不是拍脑袋拼出来的 loss，而是对边缘对数似然直接应用 Jensen 不等式后得到的下界。
 
-### Derivation Block 2: Why The Gap To Log Likelihood Is A Posterior KL
+### 推导块 2：为什么 ELBO 和对数似然之间的差距是真实后验上的 KL
 
-To understand what ELBO is optimizing, start from Bayes' rule:
+为了看清 ELBO 真正在优化什么，从 Bayes 公式出发：
 
 \[
 p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}.
 \]
 
-Take logs:
+先取对数：
 
 \[
 \log p_\theta(z\mid x)=\log p_\theta(x,z)-\log p_\theta(x).
 \]
 
-Rearrange:
+整理得到
 
 \[
 \log p_\theta(x)=\log p_\theta(x,z)-\log p_\theta(z\mid x).
 \]
 
-Now subtract and add \( \log q_\phi(z\mid x) \):
+然后人为地加减 \( \log q_\phi(z\mid x) \)：
 
 \[
 \log p_\theta(x)
@@ -151,7 +151,7 @@ Now subtract and add \( \log q_\phi(z\mid x) \):
 + \log q_\phi(z\mid x)-\log p_\theta(z\mid x).
 \]
 
-Take expectation under \( q_\phi(z\mid x) \):
+对 \( q_\phi(z\mid x) \) 取期望：
 
 \[
 \log p_\theta(x)
@@ -170,7 +170,7 @@ Take expectation under \( q_\phi(z\mid x) \):
 \right].
 \]
 
-Recognize the two terms:
+识别两个项：
 
 \[
 \log p_\theta(x)
@@ -178,26 +178,26 @@ Recognize the two terms:
 + D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)\bigr).
 \]
 
-Since KL divergence is always nonnegative,
+由于 KL 散度总是非负，因此
 
 \[
 \mathcal{L}(x;\theta,\phi)\le \log p_\theta(x).
 \]
 
-This identity is more informative than the Jensen derivation alone:
+这个恒等式比单纯的 Jensen 推导信息更多：
 
-- maximizing ELBO increases a lower bound on log likelihood;
-- simultaneously, it tries to make \( q_\phi(z\mid x) \) close to the true posterior \( p_\theta(z\mid x) \).
+- 最大化 ELBO 会提升对数似然的下界；
+- 同时也在逼迫 \( q_\phi(z\mid x) \) 接近真实后验 \( p_\theta(z\mid x) \)。
 
-### Derivation Block 3: Splitting ELBO Into Reconstruction And KL Terms
+### 推导块 3：把 ELBO 拆成重建项与 KL 项
 
-Now expand the joint density using
+现在使用联合分布分解
 
 \[
 p_\theta(x,z)=p(z)p_\theta(x\mid z).
 \]
 
-Substitute this into ELBO:
+代回 ELBO：
 
 \[
 \mathcal{L}(x;\theta,\phi)
@@ -208,7 +208,7 @@ Substitute this into ELBO:
 \right].
 \]
 
-Group the reconstruction term and the regularization term:
+把重建项和正则项分组：
 
 \[
 \mathcal{L}(x;\theta,\phi)
@@ -217,14 +217,14 @@ Group the reconstruction term and the regularization term:
 + \mathbb{E}_{q_\phi(z\mid x)}[\log p(z)-\log q_\phi(z\mid x)].
 \]
 
-The second expectation is exactly a negative KL divergence:
+第二项正好就是一个负 KL：
 
 \[
 \mathbb{E}_{q_\phi(z\mid x)}[\log p(z)-\log q_\phi(z\mid x)]
 = -D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr).
 \]
 
-So the standard VAE objective is
+因此标准 VAE 目标为
 
 \[
 \mathcal{L}(x;\theta,\phi)
@@ -233,46 +233,45 @@ So the standard VAE objective is
 - D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr).
 \]
 
-This is the familiar decomposition:
+这就是常见的分解：
 
-- **reconstruction term**: \( \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)] \), which encourages the decoder to explain the data well.
+- **重建项**：\( \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)] \)，鼓励 decoder 更好地解释数据。
+- **KL 正则项**：\( D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr) \)，鼓励 encoder 的后验接近简单先验。
 
-- **KL regularizer**: \( D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr) \), which encourages the encoder posterior to stay close to the prior.
+所以 ELBO 并不只是“重建加正则”这么粗糙，它是从近似最大似然推出来的严格目标。
 
-So ELBO is not merely "reconstruction plus regularization"; it is exactly a bound-derived version of approximate maximum likelihood.
+### 推导块 4：高斯 encoder 的重参数化技巧
 
-### Derivation Block 4: Reparameterization Trick For Gaussian Encoders
-
-If \( q_\phi(z\mid x) \) depends on \( \phi \), then sampling
+如果 \( q_\phi(z\mid x) \) 依赖参数 \( \phi \)，那么直接从
 
 \[
 z\sim q_\phi(z\mid x)
 \]
 
-seems to block backpropagation through \( \phi \). VAE handles this by reparameterization.
+采样似乎会阻断关于 \( \phi \) 的反向传播。VAE 用重参数化来解决这个问题。
 
-Assume the encoder outputs the parameters of a diagonal Gaussian:
+假设 encoder 输出对角高斯：
 
 \[
 q_\phi(z\mid x)
 = \mathcal{N}\bigl(z;\mu_\phi(x),\operatorname{diag}(\sigma_\phi^2(x))\bigr).
 \]
 
-Instead of sampling \( z \) directly from this distribution, sample
+与其直接从该分布采样，不如先采样
 
 \[
 \epsilon \sim \mathcal{N}(0,I)
 \]
 
-and then define
+然后定义
 
 \[
 z = \mu_\phi(x) + \sigma_\phi(x)\odot \epsilon.
 \]
 
-This is just a change of variables for Gaussian sampling: a standard normal sample is shifted by the mean and scaled by the standard deviation.
+这本质上是高斯采样的一次变量代换：先从标准正态采样，再做平移和缩放。
 
-Now the reconstruction expectation becomes
+此时重建期望可以改写为
 
 \[
 \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)]
@@ -283,17 +282,17 @@ Now the reconstruction expectation becomes
 \right].
 \]
 
-The randomness is now isolated in \( \epsilon \), which is independent of \( \phi \). Therefore gradients with respect to \( \phi \) can flow through the deterministic transformation
+现在随机性被完全隔离在 \( \epsilon \) 中，而 \( \epsilon \) 与 \( \phi \) 无关。因此，关于 \( \phi \) 的梯度可以穿过确定性映射
 
 \[
-z(\epsilon,x,\phi)=\mu_\phi(x)+\sigma_\phi(x)\odot\epsilon.
+z(\epsilon,x,\phi)=\mu_\phi(x)+\sigma_\phi(x)\odot\epsilon
 \]
 
-This is the key reason VAEs are trainable with standard stochastic gradient methods.
+正常传播。这就是 VAE 能够使用标准随机梯度方法训练的关键。
 
-### Derivation Block 5: Closed-Form KL For A Diagonal Gaussian Posterior
+### 推导块 5：对角高斯后验下的闭式 KL
 
-When
+当
 
 \[
 q_\phi(z\mid x)=\mathcal{N}\bigl(z;\mu,\operatorname{diag}(\sigma^2)\bigr),
@@ -301,7 +300,7 @@ q_\phi(z\mid x)=\mathcal{N}\bigl(z;\mu,\operatorname{diag}(\sigma^2)\bigr),
 p(z)=\mathcal{N}(0,I),
 \]
 
-the KL divergence has a closed form. Start from the Gaussian KL formula:
+KL 散度有闭式表达。先写出高斯 KL 的标准公式：
 
 \[
 D_{\mathrm{KL}}(\mathcal{N}(\mu_q,\Sigma_q)\,\|\,\mathcal{N}(\mu_p,\Sigma_p))
@@ -315,15 +314,15 @@ D_{\mathrm{KL}}(\mathcal{N}(\mu_q,\Sigma_q)\,\|\,\mathcal{N}(\mu_p,\Sigma_p))
 \right].
 \]
 
-For \( \mu_p=0 \), \( \Sigma_p=I \), and \( \Sigma_q=\operatorname{diag}(\sigma^2) \), we have:
+对这里的设定，\( \mu_p=0 \)、\( \Sigma_p=I \)、\( \Sigma_q=\operatorname{diag}(\sigma^2) \)，因此：
 
-- \( |\Sigma_p|=1 \),
-- \( |\Sigma_q|=\prod_{j=1}^k \sigma_j^2 \),
-- \( \Sigma_p^{-1}=I \),
-- \( \operatorname{tr}(\Sigma_q)=\sum_{j=1}^k \sigma_j^2 \),
-- \( \mu^\top \mu=\sum_{j=1}^k \mu_j^2 \).
+- \( |\Sigma_p|=1 \)；
+- \( |\Sigma_q|=\prod_{j=1}^k \sigma_j^2 \)；
+- \( \Sigma_p^{-1}=I \)；
+- \( \operatorname{tr}(\Sigma_q)=\sum_{j=1}^k \sigma_j^2 \)；
+- \( \mu^\top \mu=\sum_{j=1}^k \mu_j^2 \)。
 
-Substitute these into the KL formula:
+把这些代回 KL 公式：
 
 \[
 D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p(z))
@@ -336,13 +335,13 @@ D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p(z))
 \right].
 \]
 
-Since
+又因为
 
 \[
 \log |\Sigma_q|=\sum_{j=1}^k \log \sigma_j^2,
 \]
 
-we obtain
+最终得到
 
 \[
 D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p(z))
@@ -353,58 +352,58 @@ D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p(z))
 \right).
 \]
 
-This closed form is what most implementations use directly in training.
+这就是大多数实现里直接使用的闭式 KL。
 
-## Intuition / Interpretation
+## 直觉 / 理解
 
-- The decoder wants latent codes that reconstruct \( x \) well.
-- The KL term prevents the encoder from placing every example in an arbitrary isolated region of latent space.
-- The prior \( p(z)=\mathcal{N}(0,I) \) turns the latent space into something smooth enough to sample from.
+- Decoder 希望潜变量 \( z \) 足够有信息，从而能把 \( x \) 重建好。
+- KL 项则阻止 encoder 把每个样本都映射到潜空间中完全孤立的位置。
+- 先验 \( p(z)=\mathcal{N}(0,I) \) 让潜空间足够平滑，从而真正可采样。
 
-I find it helpful to think of ELBO as balancing two forces:
+我通常把 ELBO 理解成两股力量之间的平衡：
 
-- "make \( z \) informative enough to reconstruct \( x \)";
-- "make the distribution of codes simple enough to sample and interpolate."
+- “让 \( z \) 足够有信息，能够解释 \( x \)”；
+- “让编码后的分布足够简单，便于采样与插值”。
 
-If the reconstruction term dominates, the latent space can become irregular. If the KL term dominates too much, the model can ignore \( z \), leading to posterior collapse.
+如果重建项太强，潜空间会变得很不规则；如果 KL 项太强，模型又可能忽略 \( z \)，出现 posterior collapse。
 
-## Relation To Other Methods
+## 与其他方法的关系
 
-### Relation To Classical Variational Inference
+### 与经典变分推断的关系
 
-VAE is amortized variational inference:
+VAE 可以看成 amortized variational inference：
 
-- classical VI optimizes a separate variational distribution for each datapoint;
-- VAE learns one encoder network \( q_\phi(z\mid x) \) that predicts variational parameters for all datapoints.
+- 经典 VI 为每个数据点单独优化一个变分分布；
+- VAE 学的是一个共享 encoder 网络 \( q_\phi(z\mid x) \)，统一预测所有数据点的变分参数。
 
-So VAE should be read as "variational inference with shared inference machinery."
+所以读 VAE 时，可以把它理解成“带共享推断机制的变分推断”。
 
-### Relation To Diffusion Models
+### 与 Diffusion Models 的关系
 
-Diffusion models usually do not optimize a latent-variable ELBO in the same way as VAE, but the conceptual similarity is still useful:
+Diffusion models 通常不会像 VAE 那样直接优化一个潜变量 ELBO，但从概念上比较仍然很有帮助：
 
-- both introduce auxiliary latent variables;
-- both derive trainable objectives from likelihood-related bounds or decompositions;
-- both turn difficult density modeling into easier local prediction problems.
+- 两者都会引入辅助潜变量；
+- 两者都会从似然相关的分解或下界出发，构造可训练目标；
+- 两者都把困难的密度建模转写成更容易的局部预测问题。
 
-Compared with the diffusion notes in this repo, VAE is much more explicit about latent-variable probabilistic modeling and posterior approximation, while diffusion focuses more on denoising paths and reverse dynamics.
+和本仓库里的 diffusion 笔记相比，VAE 更强调潜变量概率建模和后验近似，而 diffusion 更强调去噪路径和反向动力学。
 
-### Relation To Flow-Based Models
+### 与 Flow-Based Models 的关系
 
-Normalizing flows aim for exact likelihood through invertible transforms and exact change-of-variables formulas. VAE instead accepts approximate inference:
+Normalizing flows 追求的是通过可逆变换和精确的 change-of-variables 公式来获得精确似然；VAE 则接受近似推断：
 
-- flows: exact likelihood, invertibility constraints;
-- VAE: approximate posterior, more flexible encoder-decoder design.
+- flows：精确似然，但有可逆性约束；
+- VAE：后验近似，但 encoder-decoder 设计更灵活。
 
-So VAE trades exactness for flexibility and easier latent-variable semantics.
+所以 VAE 用精确性换取了灵活性和更自然的潜变量语义。
 
-## My Notes / Open Questions
+## 我的笔记 / 开放问题
 
-- The identity \( \log p_\theta(x)=\mathcal{L}(x;\theta,\phi)+D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)) \) is the conceptual center of the whole method. Once this is clear, the rest of VAE becomes much less mysterious.
-- Reparameterization is not just an implementation trick; it is the step that makes gradient-based training of stochastic latent variables practical.
-- A useful follow-up note would compare VAE, beta-VAE, and hierarchical VAE from the viewpoint of how they modify the ELBO tradeoff.
+- 恒等式 \( \log p_\theta(x)=\mathcal{L}(x;\theta,\phi)+D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)) \) 是整个方法的概念中心。只要这一步想清楚，VAE 就会神秘感大减。
+- 重参数化不只是实现细节，它是“随机潜变量也能做梯度训练”这件事真正成立的关键。
+- 一个很适合后续补充的方向，是从 ELBO 权衡的角度比较 VAE、beta-VAE 和 hierarchical VAE。
 
-## References
+## 参考资料
 
 - [Kingma and Welling (2014), *Auto-Encoding Variational Bayes*](https://arxiv.org/abs/1312.6114)
 - [Doersch (2016), *Tutorial on Variational Autoencoders*](https://arxiv.org/abs/1606.05908)

@@ -24,6 +24,14 @@ After each task, report:
 - Follow existing MkDocs and documentation structure.
 - Prefer clear workflow names and minimal automation complexity.
 
+## Language Rules
+
+- Unless there is a strong reason otherwise, technical notes, topic index pages, and repository-facing learning materials should be written in Chinese.
+- Keep paper titles, method names, standard technical terms, and formula notation in their conventional original form when translation would reduce clarity.
+- Prefer Chinese exposition with English terms in parentheses when a concept is widely recognized by its English name.
+- When updating an existing note, keep the language consistent across the full page rather than mixing large English and Chinese sections.
+- If a note is intentionally bilingual, state that choice explicitly near the top instead of drifting into mixed-language writing by accident.
+
 ## Technical Learning Note Writing Standards
 
 These rules apply whenever Codex or another AI agent writes or substantially rewrites a technical note in this repository.

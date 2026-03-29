@@ -1,6 +1,6 @@
-# VLM Reading Map
+# VLM 阅读地图
 
-## Metadata
+## 元信息
 
 - Topic: vlm
 - Status: seed
@@ -9,51 +9,50 @@
 - Primary references:
   - Foundational VLM pretraining and instruction-tuning papers
 
-## One-Sentence Takeaway
+## 一句话总结
 
-Vision-language models can be organized usefully by how they align vision and text, where they fuse information, and what supervision they rely on.
+视觉语言模型可以从三个角度来组织理解：视觉与文本如何对齐、信息在什么位置融合，以及训练依赖了什么监督信号。
 
-## Why It Matters
+## 为什么重要
 
-The VLM literature has grown quickly, and simple categories make it easier to compare design choices without losing the big picture.
+VLM 文献增长很快，用清晰的分类框架来读论文，更容易比较设计选择，同时不丢掉整体脉络。
 
-## Core Ideas
+## 核心思想
 
-### Alignment Strategy
+### 对齐策略
 
-Some systems use contrastive alignment, while others train generatively or rely on instruction-following supervision.
+有些系统依赖对比式对齐，有些采用生成式训练，也有些主要借助 instruction-following 监督。
 
-### Fusion Location
+### 融合位置
 
-Models differ in whether they fuse early, late, or through a lightweight connector into a pretrained language model.
+不同模型会在早期融合、后期融合，或者通过轻量 connector 接入预训练语言模型。
 
-### Capability Framing
+### 能力划分
 
-It is useful to separate perception-heavy tasks from reasoning-heavy tasks when reading new VLM papers.
+阅读新的 VLM 论文时，把偏感知的任务和偏推理的任务分开看，往往会更清楚。
 
-## Important Details
+## 重要细节
 
-- Architecture: vision encoder plus text encoder or LLM backbone
-- Objective: contrastive, captioning, next-token prediction, or instruction tuning
-- Data: image-text pairs, QA data, OCR-heavy corpora, synthetic instruction data
-- Evaluation: captioning, VQA, grounding, document tasks, agent-style reasoning
-- Strengths: rich supervision and practical multimodal interfaces
-- Limitations: brittle grounding, hallucination, and benchmark sensitivity
+- Architecture: 视觉编码器配合文本编码器或 LLM 主干
+- Objective: 对比学习、captioning、next-token prediction 或 instruction tuning
+- Data: 图文对、问答数据、OCR 密集语料与合成指令数据
+- Evaluation: captioning、VQA、grounding、文档任务与 agent 式推理
+- Strengths: 监督丰富，接口实用，多模态交互自然
+- Limitations: grounding 脆弱、容易 hallucination、对 benchmark 选择敏感
 
-## Personal Notes
+## 我的笔记
 
-This page works well as a hub for later notes on CLIP-like, Flamingo-like, and LLM-connected VLM families.
+这一页适合作为后续扩展 CLIP 类、Flamingo 类和 LLM-connector 类 VLM 笔记的枢纽页。
 
-## Open Questions
+## 开放问题
 
-- Which benchmarks still measure real multimodal reasoning rather than language priors?
-- How much of recent progress comes from data curation versus architecture?
+- 现在还有哪些 benchmark 真正在衡量多模态推理，而不是语言先验？
+- 最近的进展中，数据整理的贡献和架构创新的贡献各占多少？
 
-## See Also
+## 相关笔记
 
 - [Unified Multimodal Models Overview](../unified-models/unified-multimodal-models-overview.md)
 
-## References
+## 参考资料
 
-- Add concrete paper notes here as you build out the section.
-
+- 随着这一部分扩展，可以在这里逐步补充具体论文笔记。

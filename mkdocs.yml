@@ -1,5 +1,5 @@
-site_name: Learning Notes
-site_description: Technical learning notes for AI/ML research, models, and systems.
+site_name: 学习笔记
+site_description: 面向 AI / ML 研究、模型与系统的技术学习笔记。
 site_url: https://jnmz.github.io/learning_note/
 repo_url: https://github.com/jnmz/learning_note
 repo_name: jnmz/learning_note
@@ -48,23 +48,23 @@ extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
-  - Home: index.md
-  - Topics:
-      - Unified Models:
+  - 首页: index.md
+  - 主题:
+      - 统一模型:
           - unified-models/index.md
-          - Unified Multimodal Models Overview: unified-models/unified-multimodal-models-overview.md
-          - Show-o Notes: unified-models/show-o-notes.md
-          - Show-o2 Notes: unified-models/show-o2-notes.md
-      - Vision-Language Models:
+          - 统一多模态模型总览: unified-models/unified-multimodal-models-overview.md
+          - Show-o 笔记: unified-models/show-o-notes.md
+          - Show-o2 笔记: unified-models/show-o2-notes.md
+      - 视觉语言模型:
           - vlm/index.md
-          - VLM Reading Map: vlm/vlm-reading-map.md
-      - Generative Modeling:
+          - VLM 阅读地图: vlm/vlm-reading-map.md
+      - 生成建模:
           - generative-modeling/index.md
-          - Diffusion Primer: generative-modeling/diffusion-primer.md
-          - DDPM Notes: generative-modeling/ddpm-notes.md
-          - Score Matching Notes: generative-modeling/score-matching-notes.md
-          - Flow Matching Notes: generative-modeling/flow-matching-notes.md
-          - VAE And ELBO Notes: generative-modeling/vae-elbo-notes.md
-  - Writing Notes:
-      - Contribution Guide: contributing.md
-      - Note Template: workflows/note-template.md
+          - 扩散模型导读: generative-modeling/diffusion-primer.md
+          - DDPM 笔记: generative-modeling/ddpm-notes.md
+          - Score Matching 笔记: generative-modeling/score-matching-notes.md
+          - Flow Matching 笔记: generative-modeling/flow-matching-notes.md
+          - VAE 与 ELBO 笔记: generative-modeling/vae-elbo-notes.md
+  - 写作说明:
+      - 贡献指南: contributing.md
+      - 笔记模板: workflows/note-template.md

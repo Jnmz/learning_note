@@ -1,6 +1,6 @@
-# Note Title
+# 笔记标题
 
-## Metadata
+## 元信息
 
 - Topic:
 - Status: seed | in-progress | revised
@@ -8,29 +8,29 @@
 - Source type: paper | article | lecture | implementation | concept
 - Primary references:
 
-## One-Sentence Takeaway
+## 一句话总结
 
-Write the shortest possible statement of what matters here.
+用尽可能短的一句话写清这里最重要的内容。
 
-## Why It Matters
+## 为什么重要
 
-Explain the problem setting, motivation, or research context.
+解释问题设定、研究动机或所处背景。
 
-## Core Ideas
+## 核心思想
 
-### Idea 1
+### 关键点 1
 
-Describe the first key mechanism or claim.
+描述第一个关键机制或核心结论。
 
-### Idea 2
+### 关键点 2
 
-Describe the second key mechanism or claim.
+描述第二个关键机制或核心结论。
 
-### Idea 3
+### 关键点 3
 
-Describe the third key mechanism or claim.
+描述第三个关键机制或核心结论。
 
-## Important Details
+## 重要细节
 
 - Architecture:
 - Objective:
@@ -39,21 +39,20 @@ Describe the third key mechanism or claim.
 - Strengths:
 - Limitations:
 
-## Personal Notes
+## 我的笔记
 
-Capture intuitions, rephrasings, or mental models.
+记录自己的直觉、重述方式或心智模型。
 
-## Open Questions
+## 开放问题
 
-- Question 1
-- Question 2
+- 问题 1
+- 问题 2
 
-## See Also
+## 相关笔记
 
-- Link related notes here.
+- 在这里链接相关笔记。
 
-## References
+## 参考资料
 
-- Paper or resource title
+- 论文或资料标题
 - URL
-

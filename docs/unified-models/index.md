@@ -1,23 +1,23 @@
-# Unified Models
+# 统一模型
 
-Notes in this section focus on architectures and training strategies that aim to unify multiple modalities, tasks, or interaction patterns within one system.
+这一部分关注试图在同一个系统中统一多模态、任务类型或交互形式的架构与训练策略。
 
-## Scope
+## 范围
 
-- shared token spaces
-- multimodal sequence modeling
-- unified pretraining objectives
-- joint perception and generation
+- 共享 token / latent 空间
+- 多模态序列建模
+- 统一预训练目标
+- 理解与生成联合建模
 
-## Notes
+## 笔记
 
-- [Unified Multimodal Models Overview](./unified-multimodal-models-overview.md): a starter map of recurring design patterns in unified multimodal systems.
-- [Show-o Notes](./show-o-notes.md): a detailed note on how Show-o mixes autoregressive language modeling with discrete diffusion-style image generation in one transformer.
-- [Show-o2 Notes](./show-o2-notes.md): a detailed note on how Show-o2 upgrades the visual side to 3D causal VAE latents and flow matching for text-image-video unification.
+- [统一多模态模型总览](./unified-multimodal-models-overview.md)：梳理统一多模态系统中常见设计模式的起步页。
+- [Show-o 笔记](./show-o-notes.md)：详细分析 Show-o 如何在一个 transformer 里结合语言自回归建模与离散扩散式图像生成。
+- [Show-o2 笔记](./show-o2-notes.md)：详细分析 Show-o2 如何用 3D causal VAE latent 与 flow matching 进一步统一文本、图像与视频。
 
-## Suggested Future Notes
+## 后续可补充的笔记
 
-- token unification strategies
-- modality adapters and routing
-- training mixtures across tasks
-- evaluation tradeoffs in all-in-one systems
+- token 统一策略
+- 模态适配器与路由机制
+- 跨任务训练配比
+- all-in-one 系统中的评测权衡

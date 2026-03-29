@@ -1,28 +1,28 @@
-# Learning Notes
+# 学习笔记
 
-This site is a long-term technical notebook for AI and machine learning study. It is organized as a documentation system rather than a chronological blog so topics can grow steadily over time.
+这个站点是一个长期维护的 AI 与机器学习技术笔记仓库。它按照文档系统而不是时间线博客来组织，这样每个主题都可以持续扩展，而不是被零散的时间顺序打断。
 
-## Topic Map
+## 主题地图
 
-- [Unified Models](./unified-models/index.md): research notes on unified multimodal systems, shared architectures, and cross-domain training.
-- [Vision-Language Models](./vlm/index.md): notes on multimodal understanding, grounding, instruction tuning, and evaluation.
-- [Generative Modeling](./generative-modeling/index.md): notes on diffusion, autoregressive modeling, latent spaces, and training objectives.
+- [统一模型](./unified-models/index.md)：记录统一多模态系统、共享架构和跨任务训练的研究笔记。
+- [视觉语言模型](./vlm/index.md)：记录多模态理解、grounding、指令微调与评测相关笔记。
+- [生成建模](./generative-modeling/index.md)：记录扩散、自回归、潜变量方法和训练目标相关笔记。
 
-## How To Use This Repository
+## 如何使用这个仓库
 
-- Start from a topic index page when you want an overview.
-- Use the note template for new entries so sections stay consistent.
-- Prefer short, linkable notes over one large catch-all document.
-- Add cross-links between related notes when concepts overlap.
+- 想先建立全局认识时，从主题索引页开始读。
+- 新建笔记时优先使用统一模板，保持结构一致。
+- 尽量写成短而可链接的独立笔记，而不是一个过大的总览文档。
+- 当概念之间存在重叠时，主动添加交叉链接。
 
-## Writing Principles
+## 写作原则
 
-- Write in Markdown.
-- Keep notes concise, technical, and easy to scan.
-- Separate summaries, key mechanisms, and open questions.
-- Record citations or paper links whenever possible.
+- 使用 Markdown 编写。
+- 保持技术性、清晰性和可扫描性。
+- 明确区分摘要、关键机制和开放问题。
+- 尽量记录引用、论文链接或资料来源。
 
-## Quick Links
+## 快速入口
 
-- [Contribution Guide](./contributing.md)
-- [Reusable Note Template](./workflows/note-template.md)
+- [贡献指南](./contributing.md)
+- [可复用笔记模板](./workflows/note-template.md)
