@@ -400,11 +400,7 @@ So VAE trades exactness for flexibility and easier latent-variable semantics.
 
 ## My Notes / Open Questions
 
-- The identity
-\[
-\log p_\theta(x)=\mathcal{L}(x;\theta,\phi)+D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x))
-\]
-is the conceptual center of the whole method. Once this is clear, the rest of VAE becomes much less mysterious.
+- The identity \( \log p_\theta(x)=\mathcal{L}(x;\theta,\phi)+D_{\mathrm{KL}}(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)) \) is the conceptual center of the whole method. Once this is clear, the rest of VAE becomes much less mysterious.
 - Reparameterization is not just an implementation trick; it is the step that makes gradient-based training of stochastic latent variables practical.
 - A useful follow-up note would compare VAE, beta-VAE, and hierarchical VAE from the viewpoint of how they modify the ELBO tradeoff.
 
