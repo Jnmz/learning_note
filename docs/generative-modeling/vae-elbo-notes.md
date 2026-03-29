@@ -235,17 +235,9 @@ So the standard VAE objective is
 
 This is the familiar decomposition:
 
-- **reconstruction term**:
-\[
-\mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)],
-\]
-which encourages the decoder to explain the data well;
+- **reconstruction term**: \( \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)] \), which encourages the decoder to explain the data well.
 
-- **KL regularizer**:
-\[
-D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr),
-\]
-which encourages the encoder posterior to stay close to the prior.
+- **KL regularizer**: \( D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr) \), which encourages the encoder posterior to stay close to the prior.
 
 So ELBO is not merely "reconstruction plus regularization"; it is exactly a bound-derived version of approximate maximum likelihood.
 
