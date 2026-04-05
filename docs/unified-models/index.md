@@ -23,6 +23,7 @@
 - [Uni-RS 笔记](./uni-rs-notes.md)：分析面向遥感领域的空间忠实统一理解与生成模型。
 - [Show-o 笔记](./show-o-notes.md)：详细分析 Show-o 如何在一个 transformer 里结合语言自回归建模与离散扩散式图像生成。
 - [Show-o2 笔记](./show-o2-notes.md)：详细分析 Show-o2 如何用 3D causal VAE latent 与 flow matching 进一步统一文本、图像与视频。
+- [TUNA 笔记](./tuna-notes.md)：详细分析 TUNA 如何通过 VAE latent 与 representation encoder 级联，构造统一连续视觉表示。
 
 ## 后续可补充的笔记
 
