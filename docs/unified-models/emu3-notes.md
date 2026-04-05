@@ -4,7 +4,7 @@
 
 - Topic: unified-models
 - Status: revised
-- Last updated: 2026-03-29
+- Last updated: 2026-04-06
 - Source type: paper
 - Primary references:
   - Emu3: Next-Token Prediction is All You Need
@@ -12,155 +12,434 @@
 
 ## 一句话总结
 
-Emu3 是统一模型里最纯粹的 AR 路线之一：它坚持把文本、图像、视频都变成同一种序列接口，并用 next-token prediction 作为统一理解与生成的核心训练原则。
+Emu3 是统一模型里最纯粹的 autoregressive 路线之一：它坚持把文本、图像、视频都压到同一种离散 token 接口里，再用同一个 decoder-only transformer 做 next-token prediction，从而把理解、图像生成、视频生成和交错续写全部还原成一个统一的序列学习问题。
 
 ## 背景 / 问题设定
 
-Emu3 面向的是统一模型设计中的一个根本分歧：
+Emu3 面向的是 unified multimodal model 设计中的一个根本分歧：
 
-- 一派认为不同模态应保留不同建模形式，例如文本 AR、图像 diffusion；
-- 另一派认为只要统一 token 接口足够强，自回归序列建模就能覆盖所有模态。
+1. 一类方法认为，不同模态应保留不同生成动力学，例如文本用 AR、图像用 diffusion、视频再加专门时序模块。
+2. 另一类方法认为，只要把不同模态变成同一种 token 接口，自回归序列建模本身就足以覆盖理解和生成。
 
-Emu3 明显站在后一派。它想验证的不是“一个多模态模型能不能工作”，而是更强的问题：next-token prediction 是否足以成为统一文本、图像、视频的单一训练范式。
+Emu3 明确站在第二类立场，并且比很多工作走得更彻底。它要验证的不是“多模态大模型能不能工作”，而是更强、更挑衅的问题：
+
+- next-token prediction 是否可以成为文本、图像、视频的统一训练原则？
+- 一旦视觉表示也离散化为 token，模态专属目标还有多大必要？
+- 如果图像和视频都被视为序列，那么理解、创作和长文档级交错生成是否都能统一到同一种接口中？
+
+因此 Emu3 的研究重点其实不是一个 fancy 模块，而是一个非常强的建模判断：
+
+\[
+\text{next-token prediction is all you need}.
+\]
+
+这个判断如果成立，意味着 unified model 的主要难点就从“如何为不同模态设计不同 head / objective”转移到了：
+
+- 视觉 tokenizer 是否足够强；
+- 序列接口是否足够稳定；
+- 长混合序列上的 AR 建模是否足够可扩展。
 
 ## 记号
 
 设：
 
 - 文本 token 序列为 \(t = (t_1,\dots,t_m)\)
-- 图像或视频离散 token 序列为 \(v = (v_1,\dots,v_n)\)
-- 混合多模态序列为 \(s = (s_1,\dots,s_T)\)
+- 图像或视频输入为 \(x\)
 - 视觉 tokenizer 为 \(\tau_{\text{vis}}\)
+- 图像或视频经离散化后得到的视觉 token 序列为 \(v = (v_1,\dots,v_n)\)
+- 混合多模态序列为 \(s = (s_1,\dots,s_T)\)
 - 统一自回归模型为 \(f_\theta\)
+- 统一训练损失为 \(\mathcal{L}_{\text{AR}}\)
+
+Emu3 的关键映射关系可以抽象写成
+
+\[
+v = \tau_{\text{vis}}(x),
+\qquad
+s = \operatorname{concat}(\text{text tokens}, \text{visual tokens}, \text{special tokens}).
+\]
+
+随后统一模型在 \(s\) 上做标准因果建模：
+
+\[
+p_\theta(s) = \prod_{i=1}^{T} p_\theta(s_i \mid s_{<i}).
+\]
 
 ## 核心思想
 
 ### 1. 一切都变成 token
 
-Emu3 的统一方式非常直接：先把图像、视频、文本全部转换成离散 token，再让同一个 transformer 处理这些 token。
+Emu3 的统一方式非常直接，甚至有些“强硬”：
+
+- 文本本来就是 token；
+- 图像被视觉 tokenizer 压成离散视觉 token；
+- 视频被视为更长、更具结构化的视觉 token 序列；
+- 最终所有内容都进入同一个序列世界。
+
+也就是说，Emu3 不是“共享一个主干，但保留不同模态的表示和目标”，而是试图在接口层就把模态差异尽量抹平。
 
 ### 2. 一切都做 next-token prediction
 
-与 Show-o、Transfusion、LLaDA-o 这类混合目标路线不同，Emu3 刻意追求目标函数极简主义。不同模态统一成 AR next-token prediction。
+和 Show-o、Transfusion、LLaDA-o、MMaDA 这类“共享主干但保留不同动力学”的路线不同，Emu3 刻意追求目标函数极简主义。无论是：
+
+- image understanding，
+- text-to-image，
+- text-to-video，
+- interleaved continuation，
+
+最终都被写成同一种形式：
+
+\[
+\mathcal{L}_{\text{AR}}
+=
+- \sum_{i=1}^{T} \log p_\theta(s_i \mid s_{<i}).
+\]
+
+因此 Emu3 的统一不只是共享 backbone，而是连 training objective 也尽量统一。
 
 ### 3. 接口统一优先于模态专门化
 
-Emu3 的方法判断是：如果接口统一得足够彻底，那么同一个主干就能自然吸收跨模态条件关系，而不必在结构上为每种模态预留独立动力学。
+Emu3 的方法判断是：只要统一 token 接口足够彻底，同一个 transformer 就会自然吸收跨模态条件关系，而不必显式保留图像 diffusion、视频 flow、或其他模态专属输出动力学。
+
+换句话说，它优先相信的是
+
+\[
+\text{interface unification}
+\rightarrow
+\text{capability unification},
+\]
+
+而不是
+
+\[
+\text{capability unification}
+\rightarrow
+\text{keep modality-specific objectives}.
+\]
 
 ## 一个简单示意图
 
 ```text
-text --------------------------+
-                               |
-image/video --> visual tokenizer +--> unified token sequence --> AR transformer --> next token
+text ------------------------------------+
+                                         |
+image/video --> visual tokenizer --------+--> unified token sequence --> AR transformer --> next token
 ```
 
-## Architecture / Data Flow
+## 详细推导
 
-Emu3 的系统结构可以概括为“视觉 tokenizer + 混合 token 序列 + 单一 AR transformer”。
+### 推导 1：所有任务都可以统一为条件序列建模
 
-具体的数据流如下：
+Emu3 的第一原则是：一旦多模态输入输出都被转换成序列 \(s\)，那么训练目标就退化成标准语言模型目标
 
-1. 文本直接经语言 tokenizer 转为文本 token；
-2. 图像和视频通过视觉 tokenizer \(\tau_{\text{vis}}\) 转为离散视觉 token；
-3. 文本 token 与视觉 token 通过特殊边界符和任务模板组织进统一序列 \(s\)；
-4. 统一 transformer 在整个序列上做因果建模；
-5. 输出仍然是“下一个 token”，只不过这个 token 可能属于文本、图像或视频。
+\[
+p_\theta(s) = \prod_{i=1}^{T} p_\theta(s_i \mid s_{<i}).
+\]
 
-因此 Emu3 的统一不是“共享一个大 backbone，加很多头”，而是更接近“所有模态都进入同一个序列世界”。
-
-这一点带来两个直接结果：
-
-- 理解任务可以被看作视觉条件下的文本续写；
-- 生成任务可以被看作文本条件下的视觉 token 续写；
-- 视频任务则只是更长、更强结构化的视觉 token 序列续写。
-
-## Training Objective / Recipe
-
-Emu3 的训练目标极其干净：
+对应负对数似然为
 
 \[
 \mathcal{L}_{\text{AR}}
-= - \sum_{i=1}^{T} \log p_\theta(s_i \mid s_{<i}).
+=
+- \sum_{i=1}^{T} \log p_\theta(s_i \mid s_{<i}).
 \]
 
-但真正重要的是不同数据怎样被组织成这个目标：
+这个式子看起来太普通，几乎不像“多模态方法公式”，但它恰恰体现了 Emu3 的核心激进之处：它拒绝为多模态任务再写一套额外的统一数学形式。
 
-- 理解样本：`[image/video tokens] + [question text] -> [answer text]`
-- 图像生成样本：`[prompt text] -> [image tokens]`
-- 视频生成样本：`[prompt text] -> [video tokens]`
-- 交错样本：`[text][image][text][video]...` 的长序列续写
+关键在于不同任务如何被编译成 \(s\)。
 
-所以 recipe 的难点不在 loss，而在三件事：
+若是多模态理解，例如 image-conditioned QA，可以组织成
 
-1. 视觉 tokenizer 必须足够强；
-2. 多任务模板必须能被统一成稳定的序列接口；
-3. 单一主干必须能在长混合序列上维持训练稳定。
+\[
+s = [v,\, q,\, a],
+\]
 
-这也是为什么 Emu3 的方法贡献更像“统一 recipe 的完整性”，而不是某个单独新模块。
+其中 \(v\) 是图像 token，\(q\) 是问题文本，\(a\) 是答案文本。此时训练模型拟合的是
 
-## Core Mechanism Deep Dive
+\[
+p_\theta(a \mid v, q)
+=
+\prod_{j=1}^{|a|} p_\theta(a_j \mid v, q, a_{<j}).
+\]
 
-### 这个方法真正最关键的机制是什么？
+若是 text-to-image，则可组织成
 
-最关键的机制是 unified token / sequence interface。Emu3 的真正主张不是“transformer 很强”，而是“只要序列接口统一，理解和生成都可以被还原成同一种学习问题”。
+\[
+s = [t,\, v],
+\]
 
-### 它想解决统一模型里的哪种核心冲突？
+于是模型拟合
 
-它想解决的是“统一模型是否必须保留模态专属目标”这一冲突。Emu3 的回答是：未必，只要离散化和序列化足够强。
+\[
+p_\theta(v \mid t)
+=
+\prod_{j=1}^{n} p_\theta(v_j \mid t, v_{<j}).
+\]
 
-### 它的关键设计为什么成立？
+若是 text-to-video，也不过是把 \(v\) 换成更长的视频 token 序列。因此 Emu3 的一个核心观察可以写成：
 
-因为一旦视觉 tokenizer 足够好，很多原本看似不同的任务都会退化为条件序列续写问题。此时 AR transformer 的通用性就被最大化复用。
+\[
+\text{understanding, image generation, video generation}
+\subset
+\text{conditional continuation}.
+\]
 
-### 它相比相邻方法最大的不同点是什么？
+### 推导 2：视觉 tokenizer 是把视觉问题转写成语言模型问题的关键映射
 
-和 Show-o、Transfusion、LLaDA-o 最大的不同点是：Emu3 不给图像和视频保留特殊地位。它不是“统一主干、分化动力学”，而是“连动力学也尽量统一”。
+Emu3 成立的前提不是 transformer magically 理解像素，而是视觉 tokenizer \(\tau_{\text{vis}}\) 足够强，能把图像或视频映射成高质量离散序列：
+
+\[
+v = \tau_{\text{vis}}(x).
+\]
+
+这里的关键不是“离散化”三个字本身，而是离散化必须满足两类约束。
+
+第一，表示保真约束：token 序列 \(v\) 不能丢失太多可重建细节，否则视觉生成上限会被 tokenizer 直接卡死。
+
+第二，序列可建模约束：得到的 token 序列不能过于混乱，否则 AR 模型很难学到稳定的条件分布。
+
+理想情况下，我们希望存在某个离散表示 \(v\)，使得原始视觉样本分布 \(p(x)\) 可以通过离散 token 分布 \(p(v)\) 近似表达，再由解码器 \(\tau_{\text{vis}}^{-1}\) 近似恢复。这可以抽象地写成
+
+\[
+x
+\xrightarrow{\tau_{\text{vis}}}
+v
+\xrightarrow{\tau_{\text{vis}}^{-1}}
+\hat{x},
+\qquad
+\hat{x} \approx x.
+\]
+
+一旦这个近似足够好，Emu3 的整个方法就可以被理解成：
+
+\[
+\text{model } p(v \mid \text{context}) \text{ instead of } p(x \mid \text{context}).
+\]
+
+也就是说，视觉 tokenizer 实际上承担了“把视觉建模问题改写成语言建模问题”的职责。Emu3 越成功，越说明 tokenizer 才是这条路线真正的隐形主干。
+
+### 推导 3：视频只是更长、更结构化的视觉 token 序列
+
+Emu3 非常重要的一点，是它不只统一 text 和 image，还把 video 一起纳入 next-token prediction 路线。
+
+若视频由 \(F\) 帧组成，每帧离散化后得到一段 token，那么整个视频可以写成一个更长的序列
+
+\[
+v^{\text{video}}
+=
+\bigl(
+v^{(1)}_1,\dots,v^{(1)}_{n_1},
+v^{(2)}_1,\dots,v^{(2)}_{n_2},
+\dots,
+v^{(F)}_1,\dots,v^{(F)}_{n_F}
+\bigr).
+\]
+
+于是 text-to-video 目标并不需要新公式，只是变成
+
+\[
+p_\theta(v^{\text{video}} \mid t)
+=
+\prod_{j=1}^{N}
+p_\theta(v^{\text{video}}_j \mid t, v^{\text{video}}_{<j}),
+\]
+
+其中 \(N = \sum_f n_f\)。
+
+这个公式有两个重要含义。
+
+第一，Emu3 认为视频和图像的差异首先是“序列长度和结构复杂度”的差异，而不是“必须换一种生成动力学”的差异。
+
+第二，时序一致性在 Emu3 中不是通过额外的 temporal diffusion 或 flow objective 显式保证的，而是通过单一 AR 模型对长 token 前缀的条件建模隐式学习出来的。
+
+因此它对视频的态度其实很清楚：
+
+\[
+\text{video} \approx \text{long structured visual text}.
+\]
+
+这是一种极强的建模假设，也是 Emu3 最有代表性的地方。
+
+### 推导 4：统一损失的简洁性把所有困难前移到了表示与序列长度
+
+Emu3 的总损失可以写得非常干净：
+
+\[
+\mathcal{L}_{\text{AR}}
+=
+- \sum_{i=1}^{T} \log p_\theta(s_i \mid s_{<i}),
+\]
+
+但这个简洁性并不意味着问题变简单了，它只是把难点转移了。
+
+如果我们把总误差粗略分解成
+
+\[
+\text{total difficulty}
+\approx
+\text{tokenization difficulty}
++
+\text{long-context modeling difficulty}
++
+\text{sampling difficulty},
+\]
+
+那么 Emu3 基本上是主动接受：
+
+- 不再在 loss 里处理模态差异；
+- 而是把压力集中到视觉离散化质量和超长 AR 建模能力上。
+
+因此它的统一路线其实是一种“问题重分配”：
+
+\[
+\text{less objective complexity}
+\Rightarrow
+\text{more pressure on tokenizer and sequence modeling}.
+\]
+
+这也是为什么 Emu3 的成败很大程度取决于视觉 tokenizer、序列长度控制、以及推理阶段的采样效率。
+
+## 架构理解
+
+### 1. 为什么 Emu3 不是简单的“多模态 LLM”
+
+如果只是把视觉特征作为条件塞给 LLM，再让 LLM 输出文本，那是典型 MLLM。Emu3 更激进，因为它还要求：
+
+- 图像输出也由同一个 AR 主干生成；
+- 视频输出也由同一个 AR 主干生成；
+- 并且这些输出都通过统一 token 序列完成。
+
+因此 Emu3 的 unified ambition 不只是“看图说话”，而是“把视觉生成也视作语言模型问题”。
+
+### 2. 为什么这条路线天然支持 interleaved generation
+
+一旦图像、视频、文本都被编码成同一种序列对象，那么长文档级交错生成就自然变成
+
+\[
+[text][image][text][video][text]\dots
+\]
+
+这样的续写问题。
+
+也就是说，interleaved generation 在 Emu3 里不是额外外挂能力，而是统一序列建模自然带出来的结果。只要训练数据里存在这类样本，模型就能直接把它们纳入标准 AR 学习。
+
+### 3. 为什么说视觉 tokenizer 是“隐形主干”
+
+表面上 Emu3 最显眼的是单一 AR transformer，但实际上，若 tokenizer 不够好，会出现三类问题：
+
+- 视觉细节丢失，生成上限变低；
+- token 序列统计结构差，训练更难；
+- 图像和视频长度膨胀，推理代价失控。
+
+所以 Emu3 的一个重要现实是：
+
+\[
+\text{unified AR model quality}
+\le
+\text{visual tokenizer quality ceiling}.
+\]
+
+这也是为什么 Emu3 看似在强调“next-token prediction is all you need”，实际上却高度依赖一个足够强的视觉前端。
+
+## 训练流程
+
+Emu3 的训练目标很统一，但 recipe 仍然不简单。根据论文和公开材料，它的训练重点更像是围绕统一 token 接口组织多源数据。
+
+### 阶段 1：建立文本与视觉 token 的共同词表生态
+
+模型首先要学会处理新加入的视觉 token，理解这些 token 在统一序列中的统计角色。这一步并不只是“识别新词”，更是在建立：
+
+- 文本 token 和视觉 token 的共存分布；
+- 图文边界符与模板标记的作用；
+- 视觉 token 之间的基本局部依赖。
+
+### 阶段 2：用图文和视频数据强化条件生成
+
+当模型已经接受“视觉也是 token 序列”后，再用 image-text、video-text、以及理解数据强化条件分布学习，让它真正掌握：
+
+- \(p(\text{text} \mid \text{image/video})\)
+- \(p(\text{image} \mid \text{text})\)
+- \(p(\text{video} \mid \text{text})\)
+
+这些关系。
+
+### 阶段 3：用交错长序列对齐 unified behavior
+
+最后再用 interleaved multimodal 数据把不同能力缝到同一长上下文里，让模型学会在一个序列中完成：
+
+- 读图回答，
+- 文生图，
+- 文生视频，
+- 图文视频混合续写。
+
+这一步对 Emu3 特别重要，因为它的方法价值不只在单任务，而在“统一接口是否真的能支撑复杂混合交互”。
+
+## 直觉 / 理解
+
+我对 Emu3 的理解是：它相当于给 unified model 领域做了一次最彻底的 AR 极限测试。
+
+很多方法会说“统一当然重要，但图像、视频还是应该保留自己的动力学”。Emu3 的回答是：先别急着保留，把视觉都写成 token，再看看单一 NTP 到底能走多远。
+
+这条路线的美感很强，因为它在概念上极其整齐：
+
+- 一个 tokenizer 体系，
+- 一个序列接口，
+- 一个 transformer 主干，
+- 一个 next-token objective。
+
+但它的代价也同样集中：如果视觉 token 不够高效，或者序列太长，那么这种整齐会直接变成训练与采样负担。
 
 ## 与相邻方法的关系
 
-### 它和谁最像？
+### 对比 Chameleon
 
-最像 Chameleon。二者都高度信任 token 统一和 AR 建模，只是 Emu3 更明确地把视频也纳入统一叙事。
+Chameleon 也是典型的 token-unified AR 路线，Emu3 与它最像。两者都高度信任“视觉也只是 token”这一观点。Emu3 的进一步推进在于把视频也更明确地纳入同一叙事。
 
-### 它和谁差异最大？
+### 对比 Show-o
 
-和 MMaDA、LLaDA-o 这类 diffusion-centered unified model 差异最大，因为后者认为统一也可以围绕扩散动力学展开。
+Show-o 选择共享 transformer 主干，但图像生成仍然使用离散去噪式 mask prediction。Emu3 则连这一步也不保留，要求图像生成也服从 AR next-token prediction，因此统一程度更高，但也更依赖 token 序列质量与采样效率。
 
-### 它继承了什么？
+### 对比 Transfusion / Orthus
 
-它继承了 Chameleon 这种早融合、统一 token 流的思想，也继承了语言模型在长序列上下文建模上的成功经验。
+Transfusion、Orthus 都体现“共享主干 + 模态专属输出动力学”的思路。Emu3 正好站在对面：它尽量不保留专属输出动力学，而是把所有困难都塞回统一 AR 接口中。
 
-### 它修正了什么？
+### 对比 MMaDA / LLaDA-o
 
-它修正的是“视觉生成必须外挂专门生成器”的看法，把图像和视频更彻底地纳入统一主干。
-
-### 它留下了什么问题？
-
-它留下的核心问题是：视觉 tokenizer 会不会成为整个系统的单点瓶颈？以及高分辨率图像和长视频是否会让 AR 采样代价高到不具现实性。
+MMaDA、LLaDA-o 倾向于把统一建立在 diffusion family 上。Emu3 则代表另一种完全不同的信念：统一不一定要围绕 diffusion，也可以围绕序列建模本身建立。
 
 ## 重要细节
 
-- Architecture: 视觉 tokenizer + unified token sequence + 单一 AR transformer
-- Objective: 统一的 next-token prediction
-- Data: 文本、图像、视频与交错多模态长序列
-- Evaluation: multimodal perception、text-to-image、text-to-video、跨模态续写
-- Strengths: 结构与目标极度统一；系统叙事简单；天然支持长交错上下文
-- Limitations: 严重依赖视觉离散化质量；图像 / 视频 AR 采样成本高；统一代价被集中到 tokenizer 和长序列建模
+- Architecture: 视觉 tokenizer + unified token sequence + 单一 decoder-only AR transformer
+- Objective: 文本、图像、视频统一的 next-token prediction
+- Modalities: text、image、video，以及它们的交错长序列
+- Capability framing: understanding、text-to-image、text-to-video、interleaved multimodal continuation
+- Strengths: 结构和目标极度统一；接口非常整齐；天然适合统一长上下文建模
+- Limitations: 严重依赖视觉离散化质量；图像和视频 AR 采样代价高；很多统一代价被转移到 tokenizer 与长序列建模
 
-## My Take / Why It Matters
+## 我的笔记 / 开放问题
 
-Emu3 在统一模型发展链条里的意义非常大，因为它把“统一接口优先”推进得几乎没有退路。它最有价值的思想，是用一个足够强硬的 AR 反例迫使社区重新思考：模态专属目标究竟是必要归纳偏置，还是历史惯性。
+### 我的笔记
 
-它的局限同样明显。Emu3 越成功，越说明视觉 tokenizer 是 unified model 里的真正“隐形主干”；一旦 tokenizer 不够强，所有统一优势都会反过来变成集中瓶颈。
+我觉得 Emu3 最有价值的地方，是它把 unified model 的“统一程度”推进到了一个几乎没有借口的程度。很多方法都说自己统一，但往往统一的是 backbone，不是 objective；统一的是理解，不是生成；统一的是图像，不是视频。Emu3 则几乎把这些退路都堵上了。
+
+但也正因为如此，它暴露的问题特别真实：如果纯 AR 统一路线最终受限，很可能不是因为 unified idea 错了，而是因为视觉 tokenizer 和长序列采样在工程上太昂贵。换句话说，Emu3 像是一个很干净的对照实验，帮助我们看清 unified AR 路线真正的瓶颈在哪里。
+
+### 开放问题
+
+- 视觉 tokenizer 的提升，究竟会先改善生成保真，还是先改善统一训练稳定性？
+- 当图像和视频分辨率继续提高时，AR 采样成本会不会成为纯 AR unified model 的根本硬上限？
+- 视频时序一致性是否真的能仅靠长序列 AR 隐式学好，还是迟早需要显式 temporal inductive bias？
+- 若未来出现更高效的视觉 token 压缩，Emu3 这条“纯 AR 统一路线”是否会重新变得更有竞争力？
 
 ## 相关笔记
 
 - [Chameleon 笔记](./chameleon-notes.md)
 - [Show-o 笔记](./show-o-notes.md)
 - [Transfusion 笔记](./transfusion-notes.md)
+- [Show-o2 笔记](./show-o2-notes.md)
 
 ## 参考资料
 
 - Wang et al., "Emu3: Next-Token Prediction is All You Need", arXiv, 2024. https://arxiv.org/abs/2409.18869
 - Official repository. https://github.com/baaivision/Emu3
+- Hugging Face paper page. https://huggingface.co/papers/2409.18869
+
